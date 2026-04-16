@@ -1,0 +1,2 @@
+[console_scripts]
+claude-split-monitor = claude_split_monitor.cli:main

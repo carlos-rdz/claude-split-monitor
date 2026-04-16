@@ -2,64 +2,85 @@
 
 **Real-time dashboard for [claude-split](https://github.com/carlos-rdz/claude-split) sessions.**
 
-```
-┌─────────────────────────────────────────────┐
-│  claude-split                    ● ACTIVE   │
-├──────────────────┬──────────────────────────┤
-│  PLANNER         │  EXECUTOR               │
-│  1 pending       │  2 pending              │
-│  [RSLT] Codes..  │  [TASK] Fix disc.. !!   │
-│                  │  [TASK] Add consent      │
-│  Done: 3         │  Done: 1                │
-├──────────────────┴──────────────────────────┤
-│  MESSAGE FLOW                               │
-│  planner → executor  TASK  Fix discount..   │
-│  planner → executor  TASK  Add consent..    │
-│  executor → planner  RSLT  Codes fixed.     │
-└─────────────────────────────────────────────┘
-```
+See what your Planner and Executor agents are doing, how much they're spending, and where your time goes.
 
-## What it does
+![claude-split-monitor dashboard](docs/screenshot.png)
 
-Watches your `claude-split` inbox files and shows a live web dashboard:
+## Features
 
-- **Two agent panels** — Planner (blue) and Executor (yellow) with pending/done counts
-- **Pending tasks** with type badges (`TASK`, `RSLT`, `ASK?`, `BLCK`) and priority flags (`!!` for p0)
-- **Message flow** — chronological log of all messages between agents
-- **Live updates** — WebSocket pushes changes every 2 seconds
-- **Status indicator** — green (all ACK'd), yellow (work pending), red (blocked)
+- **Live agent status** — alive/offline detection via PID scanning
+- **Token + cost tracking** — reads session JSONLs, computes `$` spent per agent
+- **Task distribution donut** — visual split of work between agents
+- **Activity timeline** — 30-slot bars showing message history per agent
+- **Message flow log** — chronological event stream
+- **Savings banner** — "X tasks faster" or cost delta vs sequential
+- **Workload balance bar** — % split between Planner and Executor
+- **Live updates** — WebSocket pushes state changes every 2 seconds
 
-## Quick Start
+## Install
 
 ```bash
-# In your project repo (where you ran claude-split init):
-pip install websockets
-python3 server.py
+pip install claude-split-monitor
 ```
 
-Opens at **http://localhost:7433**
+Or from source:
 
-## Requirements
+```bash
+git clone https://github.com/carlos-rdz/claude-split-monitor
+cd claude-split-monitor
+pip install -e .
+```
 
-- Python 3.8+
-- `websockets` (>= 14)
-- A repo with `claude-split` initialized (`.claude/split/` directory exists)
+## Run
+
+From any repo that has `claude-split` initialized:
+
+```bash
+claude-split-monitor
+```
+
+Opens at **http://localhost:7433** and auto-launches in your browser.
+
+Skip auto-open:
+```bash
+claude-split-monitor --no-browser
+```
 
 ## How It Works
 
-The server polls `.claude/split/inbox-planner.md` and `.claude/split/inbox-executor.md` every 2 seconds. When messages change, it broadcasts the full state via WebSocket to the dashboard.
-
 ```
-.claude/split/inbox-*.md  →  server.py  →  WebSocket  →  dashboard.html
-     (files)                 (poll 2s)      (push)        (browser)
+┌──────────────────────┐     ┌──────────────────────┐
+│ .claude/split/       │     │ ~/.claude/sessions/  │
+│  inbox-planner.md    │     │  {pid-data}.json     │
+│  inbox-executor.md   │     │ ~/.claude/projects/  │
+└──────────┬───────────┘     │  {cwd}/*.jsonl       │
+           │                 └──────────┬───────────┘
+           │                            │
+           ▼                            ▼
+     ┌──────────────────────────────────────┐
+     │   claude-split-monitor server.py     │
+     │   Polls every 2s, parses, enriches   │
+     └─────────────────┬────────────────────┘
+                       │  WebSocket push
+                       ▼
+              ┌────────────────┐
+              │  dashboard.html │
+              │  (your browser) │
+              └────────────────┘
 ```
 
-### Endpoints
+The server watches two things:
+
+1. **Inbox files** — the source of truth for task state (pending, done, type, priority)
+2. **Session JSONLs** — live Claude Code sessions for token/cost/activity data
+
+## Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /` | Serves the dashboard |
-| `GET /api/state` | JSON state (same shape as WebSocket) |
+| `GET /` | Dashboard HTML |
+| `GET /api/state` | Full JSON state (same as WebSocket) |
+| `GET /api/health` | Server + session health check |
 | `WS /ws` | Live state updates on change |
 
 ### State Shape
@@ -69,26 +90,50 @@ The server polls `.claude/split/inbox-planner.md` and `.claude/split/inbox-execu
   "type": "cowork_state",
   "status": "active",
   "planner": {
-    "pending": [{ "id": "MSG-...", "type": "result", "body": "..." }],
-    "done": [{ "id": "MSG-...", "body": "...", "ackedBy": "planner" }]
-  },
-  "executor": {
     "pending": [...],
-    "done": [...]
+    "done": [...],
+    "alive": true,
+    "tokens_in": 42000,
+    "tokens_out": 15000,
+    "cost_usd": 0.35,
+    "activity": ["thinking", "edit", "tool", ...]
   },
+  "executor": { "...same shape..." },
   "flow": [
-    { "time": "20260416-001", "from": "planner", "to": "executor", "type": "task", "body": "..." }
-  ]
+    { "id": "MSG-20260416-001", "time": "Apr 16 #1",
+      "from": "planner", "to": "executor",
+      "type": "task", "body": "...", "acked": true }
+  ],
+  "totals": {
+    "messages": 8,
+    "pending": 3,
+    "done": 5,
+    "total_cost": 0.72,
+    "uptime_s": 3600,
+    "sequential_estimate": 1.44
+  },
+  "planner_alive": true,
+  "executor_alive": true
 }
 ```
 
-## Standalone Usage
+## Model Pricing
 
-The monitor auto-discovers your inbox files by scanning:
-1. Current working directory (`.claude/split/`)
-2. `~/.claude/projects/*/` directories
+Cost is estimated using these rates per 1M tokens:
 
-Just run `python3 server.py` from anywhere — it finds the active split session.
+| Model | Input | Output |
+|-------|-------|--------|
+| Opus | $15 | $75 |
+| Sonnet | $3 | $15 |
+| Haiku | $0.25 | $1.25 |
+
+Default fallback: Sonnet pricing.
+
+## Requirements
+
+- Python 3.8+
+- `websockets` >= 14
+- A repo with [claude-split](https://github.com/carlos-rdz/claude-split) initialized
 
 ## License
 

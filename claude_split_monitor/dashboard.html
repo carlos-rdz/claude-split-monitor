@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-split monitor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e6edf3;
+  }
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #f85149;
+    transition: background 0.3s;
+  }
+  .status-dot.green { background: #3fb950; box-shadow: 0 0 8px #3fb95060; }
+  .status-dot.yellow { background: #d29922; box-shadow: 0 0 8px #d2992260; }
+  .status-dot.red { background: #f85149; }
+  .status-label {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* KPI Strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e6edf3;
+    line-height: 1;
+  }
+  .kpi-value.cost { color: #3fb950; }
+  .kpi-value.warn { color: #d29922; }
+  .kpi-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #484f58;
+    margin-top: 4px;
+  }
+
+  /* Workload bar */
+  .workload-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #21262d;
+    margin-bottom: 16px;
+  }
+  .workload-segment {
+    height: 100%;
+    transition: width 0.5s ease;
+  }
+  .workload-segment.planner { background: #58a6ff; }
+  .workload-segment.executor { background: #d29922; }
+  .workload-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .workload-label {
+    font-size: 9px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .workload-label .pct { color: #8b949e; font-weight: 600; }
+
+  /* Sparkline */
+  .sparkline-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 20px;
+    justify-content: center;
+  }
+  .spark-bar {
+    width: 3px;
+    background: #58a6ff;
+    border-radius: 1px;
+    min-height: 1px;
+    transition: height 0.3s;
+  }
+
+  /* Savings banner */
+  .savings-banner {
+    background: linear-gradient(90deg, #3fb95015 0%, #58a6ff15 100%);
+    border: 1px solid #3fb95040;
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .savings-text {
+    font-size: 12px;
+    color: #8b949e;
+    line-height: 1.5;
+  }
+  .savings-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #3fb950;
+    white-space: nowrap;
+  }
+  .savings-value .small { font-size: 14px; font-weight: 600; color: #8b949e; }
+
+  /* Analytics grid */
+  .analytics-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Donut chart */
+  .donut-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .donut-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    align-self: flex-start;
+  }
+  .donut-svg { width: 160px; height: 160px; }
+  .donut-center {
+    position: absolute;
+    text-align: center;
+    pointer-events: none;
+  }
+  .donut-center-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+  .donut-center-label {
+    font-size: 9px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .donut-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 11px;
+  }
+  .donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #8b949e;
+  }
+  .donut-legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* Activity timeline */
+  .timeline-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .timeline-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .timeline-row {
+    margin-bottom: 12px;
+  }
+  .timeline-row:last-child { margin-bottom: 0; }
+  .timeline-label {
+    font-size: 10px;
+    color: #8b949e;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .timeline-label .agent-name { font-weight: 700; }
+  .timeline-label .agent-name.planner { color: #58a6ff; }
+  .timeline-label .agent-name.executor { color: #d29922; }
+  .timeline-bars {
+    display: flex;
+    gap: 1px;
+    height: 22px;
+  }
+  .timeline-slot {
+    flex: 1;
+    min-width: 3px;
+    border-radius: 2px;
+    background: #21262d;
+    position: relative;
+  }
+  .timeline-slot.active-task { background: #58a6ff60; }
+  .timeline-slot.active-result { background: #3fb95060; }
+  .timeline-slot.active-question { background: #d2992260; }
+  .timeline-slot.active-block { background: #f8514960; }
+
+  /* Agents grid */
+  .agents {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Agent panel */
+  .agent-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 280px;
+  }
+  .agent-panel.planner { border-top: 3px solid #58a6ff; }
+  .agent-panel.executor { border-top: 3px solid #d29922; }
+
+  .agent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .agent-role {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .agent-panel.planner .agent-role { color: #58a6ff; }
+  .agent-panel.executor .agent-role { color: #d29922; }
+
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .agent-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #484f58;
+  }
+  .agent-status-dot.active { background: #3fb950; animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #484f58;
+    margin: 12px 0 6px;
+    font-weight: 600;
+  }
+
+  /* Message list */
+  .msg-list { list-style: none; }
+  .msg-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .msg-item:hover { background: #1c2128; }
+  .msg-item.done { opacity: 0.5; }
+
+  .msg-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .msg-badge.task { background: #58a6ff20; color: #58a6ff; }
+  .msg-badge.result { background: #3fb95020; color: #3fb950; }
+  .msg-badge.question { background: #d2992220; color: #d29922; }
+  .msg-badge.block { background: #f8514920; color: #f85149; }
+
+  .msg-priority {
+    font-size: 9px;
+    font-weight: 800;
+    color: #f85149;
+    flex-shrink: 0;
+  }
+
+  .msg-body {
+    color: #c9d1d9;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .msg-id {
+    font-size: 9px;
+    color: #484f58;
+    flex-shrink: 0;
+  }
+
+  .msg-check {
+    color: #3fb950;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+
+  .empty {
+    color: #484f58;
+    font-size: 11px;
+    font-style: italic;
+    padding: 8px;
+  }
+
+  /* Counters */
+  .counters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .counter {
+    font-size: 24px;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+  .counter-label {
+    font-size: 10px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Message flow */
+  .flow-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .flow-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e6edf3;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .flow-list { list-style: none; max-height: 200px; overflow-y: auto; }
+  .flow-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #21262d;
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .flow-time { color: #484f58; font-size: 10px; flex-shrink: 0; width: 45px; }
+  .flow-from { font-weight: 600; flex-shrink: 0; width: 65px; }
+  .flow-from.planner { color: #58a6ff; }
+  .flow-from.executor { color: #d29922; }
+  .flow-arrow { color: #484f58; flex-shrink: 0; }
+  .flow-to { color: #8b949e; flex-shrink: 0; width: 65px; }
+  .flow-body { color: #c9d1d9; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flow-ack { color: #3fb950; font-size: 10px; flex-shrink: 0; }
+
+  /* Disconnected overlay */
+  .disconnected {
+    position: fixed;
+    inset: 0;
+    background: #0d1117e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .disconnected-box {
+    background: #161b22;
+    border: 1px solid #f85149;
+    border-radius: 12px;
+    padding: 24px 32px;
+    text-align: center;
+  }
+  .disconnected-box h2 { color: #f85149; font-size: 14px; margin-bottom: 8px; }
+  .disconnected-box p { color: #8b949e; font-size: 12px; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="disconnected" class="disconnected">
+  <div class="disconnected-box">
+    <h2>Connecting...</h2>
+    <p>Waiting for claude-split monitor server on :7433</p>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>claude-split</h1>
+    <div id="statusDot" class="status-dot red"></div>
+  </div>
+  <div class="header-right">
+    <span id="lastUpdated" class="status-label">--</span>
+    <span id="statusLabel" class="status-label" style="margin-left:12px">idle</span>
+  </div>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-strip">
+  <div class="kpi-card">
+    <div id="kpiMessages" class="kpi-value">0</div>
+    <div class="kpi-label">messages</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiPending" class="kpi-value warn">0</div>
+    <div class="kpi-label">pending</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiDone" class="kpi-value">0</div>
+    <div class="kpi-label">done</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiCost" class="kpi-value cost">--</div>
+    <div class="kpi-label">est. cost</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiTokens" class="kpi-value">--</div>
+    <div class="kpi-label">tokens</div>
+  </div>
+  <div class="kpi-card">
+    <div class="sparkline-container" id="sparkline"></div>
+    <div class="kpi-label">activity</div>
+  </div>
+</div>
+
+<!-- Workload Balance -->
+<div>
+  <div class="workload-labels">
+    <span class="workload-label">planner <span id="plannerPct" class="pct">50%</span></span>
+    <span class="workload-label">workload distribution</span>
+    <span class="workload-label"><span id="executorPct" class="pct">50%</span> executor</span>
+  </div>
+  <div class="workload-bar">
+    <div id="workloadPlanner" class="workload-segment planner" style="width:50%"></div>
+    <div id="workloadExecutor" class="workload-segment executor" style="width:50%"></div>
+  </div>
+</div>
+
+<!-- Savings banner -->
+<div id="savingsBanner" class="savings-banner" style="margin-top:16px">
+  <div class="savings-text">
+    <strong style="color:#e6edf3">Parallel cowork vs sequential session</strong><br>
+    <span id="savingsDetail">Run two agents simultaneously to cut wall-clock time roughly in half.</span>
+  </div>
+  <div class="savings-value">
+    <span id="savingsValue">~2x</span> <span class="small">faster</span>
+  </div>
+</div>
+
+<!-- Analytics row: donut + timeline -->
+<div class="analytics-row">
+  <div class="donut-panel">
+    <div class="donut-title">Task Distribution</div>
+    <div style="position:relative; display:flex; align-items:center; justify-content:center;">
+      <svg class="donut-svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#21262d" stroke-width="12"/>
+        <circle id="donutPlanner" cx="50" cy="50" r="40" fill="none" stroke="#58a6ff"
+                stroke-width="12" stroke-dasharray="0 251.2" transform="rotate(-90 50 50)" stroke-linecap="round"/>
+        <circle id="donutExecutor" cx="50" cy="50" r="40" fill="none" stroke="#d29922"
+                stroke-width="12" stroke-dasharray="0 251.2" stroke-dashoffset="0"
+                transform="rotate(-90 50 50)" stroke-linecap="round"/>
+      </svg>
+      <div class="donut-center">
+        <div id="donutTotal" class="donut-center-value">0</div>
+        <div class="donut-center-label">total</div>
+      </div>
+    </div>
+    <div class="donut-legend">
+      <div class="donut-legend-item">
+        <div class="donut-legend-swatch" style="background:#58a6ff"></div>
+        <span>Planner <span id="donutPlannerCount" style="color:#e6edf3;font-weight:600">0</span></span>
+      </div>
+      <div class="donut-legend-item">
+        <div class="donut-legend-swatch" style="background:#d29922"></div>
+        <span>Executor <span id="donutExecutorCount" style="color:#e6edf3;font-weight:600">0</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline-panel">
+    <div class="timeline-title">Activity Timeline (last 30 messages)</div>
+    <div class="timeline-row">
+      <div class="timeline-label">
+        <span class="agent-name planner">Planner</span>
+        <span id="plannerTimelineCount">0 events</span>
+      </div>
+      <div id="plannerTimeline" class="timeline-bars"></div>
+    </div>
+    <div class="timeline-row">
+      <div class="timeline-label">
+        <span class="agent-name executor">Executor</span>
+        <span id="executorTimelineCount">0 events</span>
+      </div>
+      <div id="executorTimeline" class="timeline-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Agent panels -->
+<div class="agents">
+  <div class="agent-panel planner">
+    <div class="agent-header">
+      <span class="agent-role">Planner</span>
+      <div class="agent-status">
+        <div id="plannerDot" class="agent-status-dot"></div>
+        <span id="plannerStatus">idle</span>
+      </div>
+    </div>
+    <div class="counters">
+      <div><div id="plannerPending" class="counter">0</div><div class="counter-label">pending</div></div>
+      <div><div id="plannerDone" class="counter">0</div><div class="counter-label">done</div></div>
+    </div>
+    <div class="section-label">Pending</div>
+    <ul id="plannerPendingList" class="msg-list"><li class="empty">No pending messages</li></ul>
+    <div class="section-label">Completed</div>
+    <ul id="plannerDoneList" class="msg-list"><li class="empty">Nothing yet</li></ul>
+  </div>
+
+  <div class="agent-panel executor">
+    <div class="agent-header">
+      <span class="agent-role">Executor</span>
+      <div class="agent-status">
+        <div id="executorDot" class="agent-status-dot"></div>
+        <span id="executorStatus">idle</span>
+      </div>
+    </div>
+    <div class="counters">
+      <div><div id="executorPending" class="counter">0</div><div class="counter-label">pending</div></div>
+      <div><div id="executorDone" class="counter">0</div><div class="counter-label">done</div></div>
+    </div>
+    <div class="section-label">Pending</div>
+    <ul id="executorPendingList" class="msg-list"><li class="empty">No pending messages</li></ul>
+    <div class="section-label">Completed</div>
+    <ul id="executorDoneList" class="msg-list"><li class="empty">Nothing yet</li></ul>
+  </div>
+</div>
+
+<!-- Message flow -->
+<div class="flow-panel">
+  <div class="flow-header">Message Flow</div>
+  <ul id="flowList" class="flow-list"><li class="empty">No messages yet</li></ul>
+</div>
+
+<script>
+const WS_URL = `ws://${location.host}/ws`;
+let ws;
+let reconnectDelay = 1000;
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    document.getElementById('disconnected').classList.add('hidden');
+    reconnectDelay = 1000;
+  };
+
+  ws.onmessage = (e) => {
+    try {
+      const state = JSON.parse(e.data);
+      if (state.type === 'cowork_state') render(state);
+    } catch {}
+  };
+
+  ws.onclose = () => {
+    document.getElementById('disconnected').classList.remove('hidden');
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, 15000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+// Message history for sparkline
+const msgHistory = new Array(20).fill(0);
+let lastMsgCount = 0;
+
+function render(state) {
+  // Overall status
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+  const s = state.status || 'idle';
+  dot.className = `status-dot ${s === 'active' ? 'green' : s === 'blocked' ? 'red' : 'yellow'}`;
+  label.textContent = s;
+
+  // Last updated
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+  const p = state.planner || { pending: [], done: [] };
+  const e = state.executor || { pending: [], done: [] };
+  const totals = state.totals || {};
+
+  // KPI strip
+  const totalMsgs = (p.pending?.length||0) + (p.done?.length||0) + (e.pending?.length||0) + (e.done?.length||0);
+  const totalPending = (p.pending?.length||0) + (e.pending?.length||0);
+  const totalDone = (p.done?.length||0) + (e.done?.length||0);
+
+  document.getElementById('kpiMessages').textContent = totals.messages || totalMsgs;
+  document.getElementById('kpiPending').textContent = totalPending;
+  document.getElementById('kpiPending').className = `kpi-value${totalPending > 0 ? ' warn' : ''}`;
+  document.getElementById('kpiDone').textContent = totalDone;
+
+  // Cost + tokens (from Phase 3 server, graceful fallback)
+  const cost = totals.total_cost ?? ((p.cost_usd||0) + (e.cost_usd||0));
+  document.getElementById('kpiCost').textContent = cost > 0 ? `$${cost.toFixed(2)}` : '--';
+  const tokens = (p.tokens_in||0) + (p.tokens_out||0) + (e.tokens_in||0) + (e.tokens_out||0);
+  document.getElementById('kpiTokens').textContent = tokens > 0 ? fmtNum(tokens) : '--';
+
+  // Sparkline
+  msgHistory.push(totalMsgs - lastMsgCount);
+  msgHistory.shift();
+  lastMsgCount = totalMsgs;
+  renderSparkline();
+
+  // Workload balance
+  const plannerWork = (p.done?.length||0) + (p.pending?.length||0);
+  const executorWork = (e.done?.length||0) + (e.pending?.length||0);
+  const totalWork = plannerWork + executorWork || 1;
+  const pPct = Math.round((plannerWork / totalWork) * 100);
+  const ePct = 100 - pPct;
+  document.getElementById('workloadPlanner').style.width = pPct + '%';
+  document.getElementById('workloadExecutor').style.width = ePct + '%';
+  document.getElementById('plannerPct').textContent = pPct + '%';
+  document.getElementById('executorPct').textContent = ePct + '%';
+
+  // Donut chart — task distribution
+  renderDonut(plannerWork, executorWork);
+
+  // Activity timeline
+  renderTimeline('planner', p, state.flow || []);
+  renderTimeline('executor', e, state.flow || []);
+
+  // Savings banner — update based on actual data
+  updateSavings(totalWork, cost, totals);
+
+  // Agent panels
+  renderAgent('planner', p);
+  renderAgent('executor', e);
+
+  // Flow
+  renderFlow(state.flow || []);
+}
+
+function renderSparkline() {
+  const el = document.getElementById('sparkline');
+  const max = Math.max(...msgHistory, 1);
+  el.innerHTML = msgHistory.map(v =>
+    `<div class="spark-bar" style="height:${Math.max(1, (v/max)*20)}px"></div>`
+  ).join('');
+}
+
+function renderDonut(pCount, eCount) {
+  const total = pCount + eCount;
+  const CIRC = 2 * Math.PI * 40; // ~251.2
+  document.getElementById('donutTotal').textContent = total;
+  document.getElementById('donutPlannerCount').textContent = pCount;
+  document.getElementById('donutExecutorCount').textContent = eCount;
+
+  if (total === 0) {
+    document.getElementById('donutPlanner').setAttribute('stroke-dasharray', `0 ${CIRC}`);
+    document.getElementById('donutExecutor').setAttribute('stroke-dasharray', `0 ${CIRC}`);
+    return;
+  }
+
+  const pArc = (pCount / total) * CIRC;
+  const eArc = (eCount / total) * CIRC;
+  document.getElementById('donutPlanner').setAttribute('stroke-dasharray', `${pArc} ${CIRC}`);
+  document.getElementById('donutExecutor').setAttribute('stroke-dasharray', `${eArc} ${CIRC}`);
+  // Offset executor arc to start where planner ends
+  document.getElementById('donutExecutor').setAttribute('stroke-dashoffset', `-${pArc}`);
+}
+
+function renderTimeline(role, data, flow) {
+  const slots = 30;
+  const el = document.getElementById(`${role}Timeline`);
+  const countEl = document.getElementById(`${role}TimelineCount`);
+
+  // Collect all messages involving this role (as sender or receiver)
+  const events = flow.filter(m => m.from === role || m.to === role).slice(-slots);
+  countEl.textContent = `${events.length} event${events.length === 1 ? '' : 's'}`;
+
+  // Pad with empty slots at start
+  const slotData = new Array(slots).fill(null);
+  for (let i = 0; i < events.length; i++) {
+    slotData[slots - events.length + i] = events[i];
+  }
+
+  el.innerHTML = slotData.map(m => {
+    if (!m) return '<div class="timeline-slot"></div>';
+    const cls = `active-${m.type}`;
+    const title = `[${m.type.toUpperCase()}] ${m.from} → ${m.to}: ${(m.body || '').slice(0, 60)}`;
+    return `<div class="timeline-slot ${cls}" title="${esc(title)}"></div>`;
+  }).join('');
+}
+
+function updateSavings(totalWork, cost, totals) {
+  const banner = document.getElementById('savingsBanner');
+  const valueEl = document.getElementById('savingsValue');
+  const detailEl = document.getElementById('savingsDetail');
+
+  if (totalWork === 0) {
+    valueEl.textContent = '~2x';
+    detailEl.textContent = 'Run two agents simultaneously to cut wall-clock time roughly in half.';
+    return;
+  }
+
+  // If we have real cost data from Phase 3, show $ saved
+  if (cost > 0 && totals.sequential_estimate) {
+    const saved = totals.sequential_estimate - cost;
+    valueEl.innerHTML = `$${saved.toFixed(2)} <span class="small">saved</span>`;
+    detailEl.textContent = `You spent $${cost.toFixed(2)} in parallel vs an estimated $${totals.sequential_estimate.toFixed(2)} running sequentially.`;
+  } else {
+    // Show task count as proxy
+    valueEl.innerHTML = `${totalWork} <span class="small">tasks</span>`;
+    detailEl.textContent = `Tasks distributed across 2 agents. Add Phase 3 data to see cost savings.`;
+  }
+}
+
+function fmtNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n;
+}
+
+function renderAgent(role, data) {
+  const pending = data.pending || [];
+  const done = data.done || [];
+
+  document.getElementById(`${role}Pending`).textContent = pending.length;
+  document.getElementById(`${role}Done`).textContent = done.length;
+
+  // Status dot — alive from Phase 3, fallback to pending-based
+  const dot = document.getElementById(`${role}Dot`);
+  const statusEl = document.getElementById(`${role}Status`);
+  const alive = data.alive;
+  if (alive === true) {
+    dot.className = 'agent-status-dot active';
+    statusEl.textContent = pending.length > 0 ? `${pending.length} pending` : 'connected';
+  } else if (alive === false) {
+    dot.className = 'agent-status-dot';
+    statusEl.textContent = 'offline';
+  } else if (pending.length > 0) {
+    dot.className = 'agent-status-dot active';
+    statusEl.textContent = `${pending.length} pending`;
+  } else {
+    dot.className = 'agent-status-dot';
+    statusEl.textContent = 'idle';
+  }
+
+  // Pending list
+  const pendingList = document.getElementById(`${role}PendingList`);
+  if (pending.length === 0) {
+    pendingList.innerHTML = '<li class="empty">No pending messages</li>';
+  } else {
+    pendingList.innerHTML = pending.map(m => `
+      <li class="msg-item">
+        <span class="msg-badge ${m.type}">${typeBadge(m.type)}</span>
+        ${m.priority === 'p0' ? '<span class="msg-priority">!!</span>' : ''}
+        <span class="msg-body" title="${esc(m.body)}">${esc(trunc(m.body, 50))}</span>
+        <span class="msg-id">${m.id}</span>
+      </li>
+    `).join('');
+  }
+
+  // Done list (last 5)
+  const doneList = document.getElementById(`${role}DoneList`);
+  const recent = done.slice(-5).reverse();
+  if (recent.length === 0) {
+    doneList.innerHTML = '<li class="empty">Nothing yet</li>';
+  } else {
+    doneList.innerHTML = recent.map(m => `
+      <li class="msg-item done">
+        <span class="msg-check">&#10003;</span>
+        <span class="msg-body" title="${esc(m.body)}">${esc(trunc(m.body, 55))}</span>
+      </li>
+    `).join('');
+  }
+}
+
+function renderFlow(flow) {
+  const list = document.getElementById('flowList');
+  if (flow.length === 0) {
+    list.innerHTML = '<li class="empty">No messages yet</li>';
+    return;
+  }
+  list.innerHTML = flow.map(m => `
+    <li class="flow-item">
+      <span class="flow-time">${m.time || ''}</span>
+      <span class="flow-from ${m.from}">${m.from}</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-to">${m.to}</span>
+      <span class="msg-badge ${m.type}">${typeBadge(m.type)}</span>
+      <span class="flow-body" title="${esc(m.body)}">${esc(trunc(m.body, 40))}</span>
+      ${m.acked ? '<span class="flow-ack">ACK</span>' : ''}
+    </li>
+  `).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function typeBadge(t) {
+  switch(t) {
+    case 'task': return 'TASK';
+    case 'result': return 'RSLT';
+    case 'question': return 'ASK?';
+    case 'block': return 'BLCK';
+    default: return t?.toUpperCase() || '?';
+  }
+}
+
+function trunc(s, n) {
+  if (!s) return '';
+  const one = s.replace(/\n/g, ' ').trim();
+  return one.length > n ? one.slice(0, n-1) + '\u2026' : one;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+connect();
+</script>
+</body>
+</html>

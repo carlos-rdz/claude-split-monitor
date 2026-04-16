@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-split-monitor"
+version = "1.0.0"
+description = "Real-time dashboard for claude-split sessions"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Carlos Rodriguez" }]
+requires-python = ">=3.8"
+keywords = ["claude", "claude-code", "ai", "multi-agent", "monitoring", "dashboard", "cowork"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Monitoring",
+]
+dependencies = [
+  "websockets>=14",
+]
+
+[project.urls]
+Homepage = "https://github.com/carlos-rdz/claude-split-monitor"
+Repository = "https://github.com/carlos-rdz/claude-split-monitor"
+Issues = "https://github.com/carlos-rdz/claude-split-monitor/issues"
+
+[project.scripts]
+claude-split-monitor = "claude_split_monitor.cli:main"
+
+[tool.setuptools]
+packages = ["claude_split_monitor"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+claude_split_monitor = ["dashboard.html"]

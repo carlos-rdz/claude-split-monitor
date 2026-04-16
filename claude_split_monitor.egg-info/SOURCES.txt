@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+claude_split_monitor/__init__.py
+claude_split_monitor/cli.py
+claude_split_monitor/dashboard.html
+claude_split_monitor/server.py
+claude_split_monitor.egg-info/PKG-INFO
+claude_split_monitor.egg-info/SOURCES.txt
+claude_split_monitor.egg-info/dependency_links.txt
+claude_split_monitor.egg-info/entry_points.txt
+claude_split_monitor.egg-info/requires.txt
+claude_split_monitor.egg-info/top_level.txt
