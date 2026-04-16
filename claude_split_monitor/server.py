@@ -37,17 +37,69 @@ def _model_cost(model, t_in, t_out):
 
 # ── Inbox discovery ───────────────────────────────────────────────────────────
 
+def _inbox_mtime(split_dir):
+    """Return mtime of the most recently modified inbox file in split_dir."""
+    best = 0.0
+    for name in ('inbox-planner.md', 'inbox-executor.md'):
+        p = split_dir / name
+        try:
+            best = max(best, p.stat().st_mtime)
+        except OSError:
+            pass
+    return best
+
 def find_split_dir():
-    candidates = [Path.cwd() / ".claude" / "split"]
-    if PROJECTS_DIR.exists():
-        for p in PROJECTS_DIR.iterdir():
-            if p.is_dir():
-                real = Path("/") / p.name.replace("-", "/")
-                candidates.append(real / ".claude" / "split")
-    for c in candidates:
-        if (c / "inbox-planner.md").exists() or (c / "inbox-executor.md").exists():
-            return c
-    return None
+    # Explicit env override
+    env = os.environ.get('CLAUDE_SPLIT_DIR')
+    if env:
+        p = Path(env)
+        if p.is_dir():
+            return p
+
+    # CWD takes priority when running from inside a project
+    cwd_candidate = Path.cwd() / ".claude" / "split"
+
+    # Collect all valid dirs — each session JSONL dir encodes the original CWD
+    # as a sanitized name: leading '/' stripped, remaining '/' → '-'.
+    # We cannot safely reverse that (hyphens are ambiguous), so instead we read
+    # ~/.claude/sessions/*.json for live CWDs, then fall back to filesystem scan.
+    valid = []
+
+    # Live sessions first
+    if SESSIONS_DIR.exists():
+        for f in SESSIONS_DIR.glob("*.json"):
+            try:
+                cwd = json.loads(f.read_text()).get("cwd", "")
+                if not cwd:
+                    continue
+                sd = Path(cwd) / ".claude" / "split"
+                if sd.is_dir() and ((sd / "inbox-planner.md").exists() or
+                                     (sd / "inbox-executor.md").exists()):
+                    valid.append(sd)
+            except Exception:
+                continue
+
+    # CWD candidate
+    if (cwd_candidate / "inbox-planner.md").exists() or \
+       (cwd_candidate / "inbox-executor.md").exists():
+        valid.append(cwd_candidate)
+
+    # Deduplicate
+    seen = set()
+    unique = []
+    for v in valid:
+        k = str(v.resolve())
+        if k not in seen:
+            seen.add(k)
+            unique.append(v)
+
+    if not unique:
+        return None
+    if len(unique) == 1:
+        return unique[0]
+
+    # Multiple matches — prefer most recently modified inbox
+    return max(unique, key=_inbox_mtime)
 
 # ── Inbox parsing (mirrors state.js parseInbox) ───────────────────────────────
 
