@@ -4,7 +4,7 @@ claude-split cowork monitor.
 Port 7433 — GET / → dashboard.html, GET /api/state → JSON, WS /ws → push on change.
 Polls .claude/split/inbox-planner.md + inbox-executor.md every 2s.
 """
-import asyncio, json, re, time
+import asyncio, json, os, re, time
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
@@ -16,6 +16,51 @@ except ImportError:
 
 PORT = 7433
 HERE = Path(__file__).parent
+SESSIONS_DIR = Path.home() / ".claude" / "sessions"
+
+# ── Session alive detection ───────────────────────────────────────────────────
+
+def _pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except (ProcessLookupError, PermissionError, OSError):
+        return False
+
+def detect_alive(split_dir):
+    """Return {planner_alive, executor_alive} by scanning ~/.claude/sessions/*.json."""
+    result = {'planner_alive': False, 'executor_alive': False}
+    if not split_dir or not SESSIONS_DIR.exists():
+        return result
+    project_root = split_dir.parent.parent          # {root}/.claude/split → {root}
+    executor_wt  = project_root / ".claude" / "worktrees" / "executor"
+    for f in SESSIONS_DIR.glob("*.json"):
+        try:
+            data = json.loads(f.read_text())
+            pid  = data.get("pid")
+            cwd  = data.get("cwd", "")
+            if not pid or not _pid_alive(pid):
+                continue
+            if str(Path(cwd)).startswith(str(executor_wt)):
+                result['executor_alive'] = True
+            elif str(Path(cwd)).startswith(str(project_root)):
+                result['planner_alive'] = True
+        except Exception:
+            continue
+    return result
+
+# ── MSG id → readable time ────────────────────────────────────────────────────
+
+def msg_time(msg_id):
+    """MSG-20260415-003 → 'Apr 15 #3'"""
+    m = re.search(r'MSG-(\d{8})-(\d+)', msg_id)
+    if m:
+        try:
+            dt  = datetime.strptime(m.group(1), '%Y%m%d')
+            return f"{dt.strftime('%b %d')} #{int(m.group(2))}"
+        except ValueError:
+            pass
+    return msg_id
 
 # ── Inbox discovery ───────────────────────────────────────────────────────────
 
@@ -86,7 +131,7 @@ def compute_state():
             writer = 'executor' if role == 'planner' else 'planner'
             all_msgs.append({
                 'id':     m['id'],
-                'time':   m['id'][4:] if len(m['id']) > 4 else m['id'],  # YYYYMMDD-NNN
+                'time':   msg_time(m['id']),
                 'from':   m['from'] or writer,
                 'to':     role,
                 'type':   m['type'],
@@ -100,6 +145,8 @@ def compute_state():
 
     total_pending = len(state['planner']['pending']) + len(state['executor']['pending'])
     state['status'] = 'active' if total_pending > 0 else 'idle'
+
+    state.update(detect_alive(split_dir))
 
     return state
 
