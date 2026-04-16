@@ -4,7 +4,7 @@ claude-split cowork monitor.
 Port 7433 — GET / → dashboard.html, GET /api/state → JSON, GET /api/health, WS /ws → push on change.
 Polls .claude/split/inbox-planner.md + inbox-executor.md every 2s.
 """
-import asyncio, json, os, re, time
+import asyncio, json, os, re, subprocess, time
 from datetime import datetime, timezone
 from http import HTTPStatus
 from pathlib import Path
@@ -105,17 +105,42 @@ def _jsonl_for_cwd(cwd):
     files = [f for f in project_dir.glob('*.jsonl') if 'subagent' not in f.name]
     return max(files, key=lambda f: f.stat().st_mtime) if files else None
 
+def _classify_tool(name):
+    if name == 'Read':                            return 'Read'
+    if name in ('Write', 'Edit', 'NotebookEdit'): return 'Edit'
+    if name == 'Bash':                            return 'Bash'
+    if name in ('Grep', 'Glob'):                  return 'Search'
+    return 'Tool'
+
+def _parse_ts(raw_ts):
+    """Parse a JSONL timestamp to milliseconds since epoch."""
+    if isinstance(raw_ts, str):
+        try:
+            return int(datetime.fromisoformat(raw_ts.replace('Z', '+00:00')).timestamp() * 1000)
+        except Exception:
+            return 0
+    if isinstance(raw_ts, (int, float)):
+        # Already ms if > 1e12, else seconds
+        return int(raw_ts * 1000) if raw_ts < 1e12 else int(raw_ts)
+    return 0
+
 def _parse_jsonl_tail(jsonl_path, tail=600, activity_window_s=60):
-    """Read last `tail` lines of a session JSONL. Return token totals + activity."""
+    """Read last `tail` lines of a session JSONL. Return token totals + activity + recent actions."""
+    _empty = {
+        'tokens_in': 0, 'tokens_out': 0, 'cost_usd': 0.0, 'activity': [],
+        'recent_actions': [], 'last_action': None, 'files_edited': 0,
+    }
     tokens_in = tokens_out = 0
-    cost_usd   = 0.0
-    activity   = []
-    cutoff_ms  = (time.time() - activity_window_s) * 1000
+    cost_usd      = 0.0
+    activity      = []
+    all_actions   = []   # {type, target, at} — all, sorted later
+    files_edited  = set()
+    cutoff_ms     = (time.time() - activity_window_s) * 1000
 
     try:
         lines = open(jsonl_path).readlines()[-tail:]
     except Exception:
-        return {'tokens_in': 0, 'tokens_out': 0, 'cost_usd': 0.0, 'activity': []}
+        return _empty
 
     for line in lines:
         try:
@@ -133,28 +158,43 @@ def _parse_jsonl_tail(jsonl_path, tail=600, activity_window_s=60):
         tokens_out += t_out
         cost_usd   += _model_cost(model, t_in, t_out)
 
-        # Activity from recent turns only
-        ts = raw.get('timestamp', 0)
-        if isinstance(ts, str):
-            try:
-                ts = datetime.fromisoformat(ts.replace('Z', '+00:00')).timestamp() * 1000
-            except Exception:
-                ts = 0
-        if ts >= cutoff_ms:
-            for block in (msg.get('content') or []):
-                btype = block.get('type', '')
-                if btype == 'thinking':
-                    activity.append('thinking')
-                elif btype == 'tool_use':
-                    name = block.get('name', '')
-                    activity.append('edit' if name in ('Write', 'Edit') else
-                                    'bash' if name == 'Bash' else 'tool')
+        ts_ms = _parse_ts(raw.get('timestamp', 0))
 
+        for block in (msg.get('content') or []):
+            btype = block.get('type', '')
+            if btype == 'thinking':
+                snippet = (block.get('thinking') or '')[:80]
+                all_actions.append({'type': 'Think', 'target': snippet, 'at': ts_ms})
+                if ts_ms >= cutoff_ms:
+                    activity.append('thinking')
+            elif btype == 'tool_use':
+                name   = block.get('name', '')
+                inp    = block.get('input') or {}
+                atype  = _classify_tool(name)
+                target = (inp.get('file_path') or inp.get('path') or
+                          inp.get('pattern')   or inp.get('command') or
+                          inp.get('query')     or name)
+                target = str(target)[:120] if target else name
+                all_actions.append({'type': atype, 'target': target, 'at': ts_ms})
+                if atype == 'Edit':
+                    fp = inp.get('file_path', '')
+                    if fp:
+                        files_edited.add(fp)
+                if ts_ms >= cutoff_ms:
+                    activity.append(
+                        'edit' if atype == 'Edit' else
+                        'bash' if atype == 'Bash' else 'tool'
+                    )
+
+    all_actions.sort(key=lambda a: a['at'], reverse=True)
     return {
-        'tokens_in':  tokens_in,
-        'tokens_out': tokens_out,
-        'cost_usd':   round(cost_usd, 4),
-        'activity':   activity[-20:],
+        'tokens_in':      tokens_in,
+        'tokens_out':     tokens_out,
+        'cost_usd':       round(cost_usd, 4),
+        'activity':       activity[-20:],
+        'recent_actions': all_actions[:5],
+        'last_action':    all_actions[0] if all_actions else None,
+        'files_edited':   len(files_edited),
     }
 
 def gather_session_intel(split_dir):
@@ -185,9 +225,54 @@ def gather_session_intel(split_dir):
 
     for role in roles:
         if not roles[role]:
-            roles[role] = {'alive': False, 'tokens_in': 0, 'tokens_out': 0, 'cost_usd': 0.0, 'activity': []}
+            roles[role] = {
+                'alive': False, 'tokens_in': 0, 'tokens_out': 0, 'cost_usd': 0.0,
+                'activity': [], 'recent_actions': [], 'last_action': None, 'files_edited': 0,
+            }
 
     return roles
+
+
+# ── Git log ───────────────────────────────────────────────────────────────────
+
+def _git_commits(project_root, limit=10):
+    """Return last `limit` commits with numstat diff totals."""
+    try:
+        result = subprocess.run(
+            ['git', 'log', '--numstat', f'-{limit}', '--format=COMMIT %H %at %s'],
+            cwd=str(project_root), capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return []
+    except Exception:
+        return []
+
+    commits = []
+    current = None
+    for line in result.stdout.splitlines():
+        if line.startswith('COMMIT '):
+            if current:
+                commits.append(current)
+            parts = line[7:].split(' ', 2)
+            current = {
+                'sha':         parts[0][:7] if parts else '',
+                'at':          int(parts[1]) * 1000 if len(parts) > 1 and parts[1].isdigit() else 0,
+                'msg':         parts[2] if len(parts) > 2 else '',
+                'added':       0,
+                'removed':     0,
+                'author_role': None,
+            }
+        elif current and line.strip() and '\t' in line:
+            parts = line.split('\t')
+            if len(parts) >= 2:
+                try:
+                    current['added']   += int(parts[0]) if parts[0].isdigit() else 0
+                    current['removed'] += int(parts[1]) if parts[1].isdigit() else 0
+                except Exception:
+                    pass
+    if current:
+        commits.append(current)
+    return commits
 
 # ── State builder ─────────────────────────────────────────────────────────────
 
@@ -244,6 +329,31 @@ def compute_state():
     # Flat alive flags for backward compat with dashboard
     state['planner_alive']  = intel['planner'].get('alive', False)
     state['executor_alive'] = intel['executor'].get('alive', False)
+
+    # stuck_seconds + alerts
+    now_ms = time.time() * 1000
+    alerts = []
+    for role in ('planner', 'executor'):
+        last_act = state[role].get('last_action')
+        if last_act and last_act.get('at'):
+            stuck_s = int((now_ms - last_act['at']) / 1000)
+            state[role]['stuck_seconds'] = max(stuck_s, 0)
+            if state[role].get('alive') and stuck_s > 120:
+                m, s = divmod(stuck_s, 60)
+                alerts.append({
+                    'severity': 'warn',
+                    'agent':    role,
+                    'text':     f"stuck {m}m {s}s",
+                    'since':    last_act['at'],
+                })
+        else:
+            state[role]['stuck_seconds'] = 0
+    state['alerts'] = alerts
+
+    # Git commits from project root
+    if split_dir:
+        project_root = split_dir.parent.parent
+        state['git'] = {'commits': _git_commits(project_root)}
 
     return state
 
