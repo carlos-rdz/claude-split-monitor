@@ -130,6 +130,139 @@
     transition: height 0.3s;
   }
 
+  /* Savings banner */
+  .savings-banner {
+    background: linear-gradient(90deg, #3fb95015 0%, #58a6ff15 100%);
+    border: 1px solid #3fb95040;
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .savings-text {
+    font-size: 12px;
+    color: #8b949e;
+    line-height: 1.5;
+  }
+  .savings-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: #3fb950;
+    white-space: nowrap;
+  }
+  .savings-value .small { font-size: 14px; font-weight: 600; color: #8b949e; }
+
+  /* Analytics grid */
+  .analytics-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Donut chart */
+  .donut-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .donut-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    align-self: flex-start;
+  }
+  .donut-svg { width: 160px; height: 160px; }
+  .donut-center {
+    position: absolute;
+    text-align: center;
+    pointer-events: none;
+  }
+  .donut-center-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+  .donut-center-label {
+    font-size: 9px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .donut-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 11px;
+  }
+  .donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #8b949e;
+  }
+  .donut-legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* Activity timeline */
+  .timeline-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .timeline-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .timeline-row {
+    margin-bottom: 12px;
+  }
+  .timeline-row:last-child { margin-bottom: 0; }
+  .timeline-label {
+    font-size: 10px;
+    color: #8b949e;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .timeline-label .agent-name { font-weight: 700; }
+  .timeline-label .agent-name.planner { color: #58a6ff; }
+  .timeline-label .agent-name.executor { color: #d29922; }
+  .timeline-bars {
+    display: flex;
+    gap: 1px;
+    height: 22px;
+  }
+  .timeline-slot {
+    flex: 1;
+    min-width: 3px;
+    border-radius: 2px;
+    background: #21262d;
+    position: relative;
+  }
+  .timeline-slot.active-task { background: #58a6ff60; }
+  .timeline-slot.active-result { background: #3fb95060; }
+  .timeline-slot.active-question { background: #d2992260; }
+  .timeline-slot.active-block { background: #f8514960; }
+
   /* Agents grid */
   .agents {
     display: grid;
@@ -392,6 +525,66 @@
   </div>
 </div>
 
+<!-- Savings banner -->
+<div id="savingsBanner" class="savings-banner" style="margin-top:16px">
+  <div class="savings-text">
+    <strong style="color:#e6edf3">Parallel cowork vs sequential session</strong><br>
+    <span id="savingsDetail">Run two agents simultaneously to cut wall-clock time roughly in half.</span>
+  </div>
+  <div class="savings-value">
+    <span id="savingsValue">~2x</span> <span class="small">faster</span>
+  </div>
+</div>
+
+<!-- Analytics row: donut + timeline -->
+<div class="analytics-row">
+  <div class="donut-panel">
+    <div class="donut-title">Task Distribution</div>
+    <div style="position:relative; display:flex; align-items:center; justify-content:center;">
+      <svg class="donut-svg" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#21262d" stroke-width="12"/>
+        <circle id="donutPlanner" cx="50" cy="50" r="40" fill="none" stroke="#58a6ff"
+                stroke-width="12" stroke-dasharray="0 251.2" transform="rotate(-90 50 50)" stroke-linecap="round"/>
+        <circle id="donutExecutor" cx="50" cy="50" r="40" fill="none" stroke="#d29922"
+                stroke-width="12" stroke-dasharray="0 251.2" stroke-dashoffset="0"
+                transform="rotate(-90 50 50)" stroke-linecap="round"/>
+      </svg>
+      <div class="donut-center">
+        <div id="donutTotal" class="donut-center-value">0</div>
+        <div class="donut-center-label">total</div>
+      </div>
+    </div>
+    <div class="donut-legend">
+      <div class="donut-legend-item">
+        <div class="donut-legend-swatch" style="background:#58a6ff"></div>
+        <span>Planner <span id="donutPlannerCount" style="color:#e6edf3;font-weight:600">0</span></span>
+      </div>
+      <div class="donut-legend-item">
+        <div class="donut-legend-swatch" style="background:#d29922"></div>
+        <span>Executor <span id="donutExecutorCount" style="color:#e6edf3;font-weight:600">0</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline-panel">
+    <div class="timeline-title">Activity Timeline (last 30 messages)</div>
+    <div class="timeline-row">
+      <div class="timeline-label">
+        <span class="agent-name planner">Planner</span>
+        <span id="plannerTimelineCount">0 events</span>
+      </div>
+      <div id="plannerTimeline" class="timeline-bars"></div>
+    </div>
+    <div class="timeline-row">
+      <div class="timeline-label">
+        <span class="agent-name executor">Executor</span>
+        <span id="executorTimelineCount">0 events</span>
+      </div>
+      <div id="executorTimeline" class="timeline-bars"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Agent panels -->
 <div class="agents">
   <div class="agent-panel planner">
@@ -518,6 +711,16 @@ function render(state) {
   document.getElementById('plannerPct').textContent = pPct + '%';
   document.getElementById('executorPct').textContent = ePct + '%';
 
+  // Donut chart — task distribution
+  renderDonut(plannerWork, executorWork);
+
+  // Activity timeline
+  renderTimeline('planner', p, state.flow || []);
+  renderTimeline('executor', e, state.flow || []);
+
+  // Savings banner — update based on actual data
+  updateSavings(totalWork, cost, totals);
+
   // Agent panels
   renderAgent('planner', p);
   renderAgent('executor', e);
@@ -532,6 +735,73 @@ function renderSparkline() {
   el.innerHTML = msgHistory.map(v =>
     `<div class="spark-bar" style="height:${Math.max(1, (v/max)*20)}px"></div>`
   ).join('');
+}
+
+function renderDonut(pCount, eCount) {
+  const total = pCount + eCount;
+  const CIRC = 2 * Math.PI * 40; // ~251.2
+  document.getElementById('donutTotal').textContent = total;
+  document.getElementById('donutPlannerCount').textContent = pCount;
+  document.getElementById('donutExecutorCount').textContent = eCount;
+
+  if (total === 0) {
+    document.getElementById('donutPlanner').setAttribute('stroke-dasharray', `0 ${CIRC}`);
+    document.getElementById('donutExecutor').setAttribute('stroke-dasharray', `0 ${CIRC}`);
+    return;
+  }
+
+  const pArc = (pCount / total) * CIRC;
+  const eArc = (eCount / total) * CIRC;
+  document.getElementById('donutPlanner').setAttribute('stroke-dasharray', `${pArc} ${CIRC}`);
+  document.getElementById('donutExecutor').setAttribute('stroke-dasharray', `${eArc} ${CIRC}`);
+  // Offset executor arc to start where planner ends
+  document.getElementById('donutExecutor').setAttribute('stroke-dashoffset', `-${pArc}`);
+}
+
+function renderTimeline(role, data, flow) {
+  const slots = 30;
+  const el = document.getElementById(`${role}Timeline`);
+  const countEl = document.getElementById(`${role}TimelineCount`);
+
+  // Collect all messages involving this role (as sender or receiver)
+  const events = flow.filter(m => m.from === role || m.to === role).slice(-slots);
+  countEl.textContent = `${events.length} event${events.length === 1 ? '' : 's'}`;
+
+  // Pad with empty slots at start
+  const slotData = new Array(slots).fill(null);
+  for (let i = 0; i < events.length; i++) {
+    slotData[slots - events.length + i] = events[i];
+  }
+
+  el.innerHTML = slotData.map(m => {
+    if (!m) return '<div class="timeline-slot"></div>';
+    const cls = `active-${m.type}`;
+    const title = `[${m.type.toUpperCase()}] ${m.from} → ${m.to}: ${(m.body || '').slice(0, 60)}`;
+    return `<div class="timeline-slot ${cls}" title="${esc(title)}"></div>`;
+  }).join('');
+}
+
+function updateSavings(totalWork, cost, totals) {
+  const banner = document.getElementById('savingsBanner');
+  const valueEl = document.getElementById('savingsValue');
+  const detailEl = document.getElementById('savingsDetail');
+
+  if (totalWork === 0) {
+    valueEl.textContent = '~2x';
+    detailEl.textContent = 'Run two agents simultaneously to cut wall-clock time roughly in half.';
+    return;
+  }
+
+  // If we have real cost data from Phase 3, show $ saved
+  if (cost > 0 && totals.sequential_estimate) {
+    const saved = totals.sequential_estimate - cost;
+    valueEl.innerHTML = `$${saved.toFixed(2)} <span class="small">saved</span>`;
+    detailEl.textContent = `You spent $${cost.toFixed(2)} in parallel vs an estimated $${totals.sequential_estimate.toFixed(2)} running sequentially.`;
+  } else {
+    // Show task count as proxy
+    valueEl.innerHTML = `${totalWork} <span class="small">tasks</span>`;
+    detailEl.textContent = `Tasks distributed across 2 agents. Add Phase 3 data to see cost savings.`;
+  }
 }
 
 function fmtNum(n) {
