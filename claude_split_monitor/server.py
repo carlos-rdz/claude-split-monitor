@@ -18,6 +18,7 @@ PORT         = 7433
 HERE         = Path(__file__).parent
 SESSIONS_DIR = Path.home() / ".claude" / "sessions"
 PROJECTS_DIR = Path.home() / ".claude" / "projects"
+HISTORY_DIR  = Path.home() / ".claude-split" / "history"
 SERVER_START = time.time()
 
 # Model pricing $/1M tokens (input, output)
@@ -246,6 +247,83 @@ def compute_state():
 
     return state
 
+# ── Session history (Phase 5) ────────────────────────────────────────────────
+
+def _session_snapshot(state):
+    """Minimal summary dict for history records."""
+    t = state.get('totals', {})
+    return {
+        'ts':         int(time.time()),
+        'iso':        datetime.now(timezone.utc).isoformat(),
+        'split_dir':  state.get('split_dir'),
+        'status':     state.get('status', 'idle'),
+        'messages':   t.get('messages', 0),
+        'pending':    t.get('pending', 0),
+        'done':       t.get('done', 0),
+        'total_cost': t.get('total_cost', 0.0),
+        'uptime_s':   t.get('uptime_s', 0),
+        'planner_alive':  state.get('planner_alive', False),
+        'executor_alive': state.get('executor_alive', False),
+    }
+
+_session_file: Path | None = None
+_last_saved_key: str | None = None
+
+def save_history(state):
+    """Append snapshot to ~/.claude-split/history/{session_start}.jsonl."""
+    global _session_file, _last_saved_key
+    snap = _session_snapshot(state)
+    key  = json.dumps({k: v for k, v in snap.items() if k not in ('ts', 'iso', 'uptime_s')})
+    if key == _last_saved_key:
+        return
+    _last_saved_key = key
+    try:
+        HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+        if _session_file is None:
+            _session_file = HISTORY_DIR / f"{int(SERVER_START)}.jsonl"
+        with open(_session_file, 'a') as f:
+            f.write(json.dumps(snap) + '\n')
+    except Exception:
+        pass
+
+def load_history(limit=50):
+    """Read last `limit` snapshots across all session files, newest first."""
+    if not HISTORY_DIR.exists():
+        return []
+    sessions = []
+    for f in sorted(HISTORY_DIR.glob('*.jsonl'), reverse=True)[:20]:
+        try:
+            lines = f.read_text().strip().splitlines()
+            if not lines:
+                continue
+            # Use last snapshot per session file as the session summary
+            last = json.loads(lines[-1])
+            first = json.loads(lines[0])
+            sessions.append({
+                'session_id': f.stem,
+                'started':    first.get('iso', ''),
+                'ended':      last.get('iso', ''),
+                'messages':   last.get('messages', 0),
+                'done':       last.get('done', 0),
+                'total_cost': last.get('total_cost', 0.0),
+                'uptime_s':   last.get('uptime_s', 0),
+                'snapshots':  len(lines),
+            })
+        except Exception:
+            continue
+    return sessions[:limit]
+
+def aggregate_stats():
+    """Totals across all saved sessions."""
+    sessions = load_history(limit=1000)
+    return {
+        'total_sessions':  len(sessions),
+        'total_messages':  sum(s.get('messages', 0) for s in sessions),
+        'total_done':      sum(s.get('done', 0) for s in sessions),
+        'total_cost':      round(sum(s.get('total_cost', 0) for s in sessions), 4),
+        'total_uptime_s':  sum(s.get('uptime_s', 0) for s in sessions),
+    }
+
 # ── WebSocket broadcast ───────────────────────────────────────────────────────
 
 clients: set = set()
@@ -271,6 +349,7 @@ async def poll_loop():
         if key != _last_key:
             _last_key = key
             await broadcast(state)
+            save_history(state)
             t = state['totals']
             print(f"  [{datetime.now().strftime('%H:%M:%S')}] "
                   f"planner {'●' if state['planner_alive'] else '○'} "
@@ -291,6 +370,13 @@ async def process_request(connection, request):
         return r
     if request.path == '/api/state':
         r = connection.respond(HTTPStatus.OK, json.dumps(compute_state()))
+        r.headers['Content-Type'] = 'application/json'
+        return r
+    if request.path == '/api/history':
+        r = connection.respond(HTTPStatus.OK, json.dumps({
+            'sessions': load_history(),
+            'aggregate': aggregate_stats(),
+        }))
         r.headers['Content-Type'] = 'application/json'
         return r
     if request.path == '/api/health':
@@ -340,6 +426,7 @@ async def main():
     print(f"  Dashboard : http://{ip}:{PORT}/")
     print(f"  State API : http://{ip}:{PORT}/api/state")
     print(f"  Health    : http://{ip}:{PORT}/api/health")
+    print(f"  History   : http://{ip}:{PORT}/api/history")
     print(f"  WebSocket : ws://{ip}:{PORT}/ws")
     print(f"  Watching  : {split_dir or 'no inbox found — will retry'}\n")
 
