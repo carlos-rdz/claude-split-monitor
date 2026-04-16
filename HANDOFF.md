@@ -64,14 +64,16 @@ You are ONE of TWO Claude sessions. There's another Claude running in parallel. 
 
 ## The cowork setup (THIS SESSION IS YOU)
 
-There are 2 Claude sessions. Coordinate via these files:
+There are 2 Claude sessions. Coordinate via these files (now local to this repo):
 
 | File | Direction | Purpose |
 |---|---|---|
-| `/Users/crodriguez/code/patriot-portraits/.claude/inbox/terminal.md` | Desktop → Terminal | Tasks you assign to the other instance |
-| `/Users/crodriguez/code/patriot-portraits/.claude/inbox/desktop.md` | Terminal → Desktop | Tasks the other instance assigns to you |
+| `.claude/inbox/terminal.md` | Desktop → Terminal | Tasks you assign to the other instance |
+| `.claude/inbox/desktop.md` | Terminal → Desktop | Tasks the other instance assigns to you |
 
-**Protocol** (`/Users/crodriguez/code/patriot-portraits/.claude/cowork.md`):
+(Earlier sessions coordinated via `patriot-portraits/.claude/inbox/` — that history is archived in that repo's git log. All new messages go in the files above.)
+
+**Protocol** (`.claude/cowork.md`):
 - Append messages only. Never overwrite.
 - Message format:
   ```
@@ -108,10 +110,10 @@ You are ONE OF TWO Claude sessions working on this product. The other Claude is 
 
 Steps:
 1. Read HANDOFF.md fully
-2. Read /Users/crodriguez/code/patriot-portraits/.claude/cowork.md (the cowork protocol)
+2. Read .claude/cowork.md (the cowork protocol)
 3. Read the latest entries in BOTH inboxes:
-   - /Users/crodriguez/code/patriot-portraits/.claude/inbox/terminal.md
-   - /Users/crodriguez/code/patriot-portraits/.claude/inbox/desktop.md
+   - .claude/inbox/terminal.md
+   - .claude/inbox/desktop.md
 4. Decide which role you are (Desktop = UI/front-end, Terminal = server/back-end)
 5. Post a MSG to the other instance's inbox: "I'm resuming as [role]. What's your status?"
 6. Wait for their reply before picking up new work.
