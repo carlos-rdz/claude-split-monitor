@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-split monitor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e6edf3;
+  }
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #f85149;
+    transition: background 0.3s;
+  }
+  .status-dot.green { background: #3fb950; box-shadow: 0 0 8px #3fb95060; }
+  .status-dot.yellow { background: #d29922; box-shadow: 0 0 8px #d2992260; }
+  .status-dot.red { background: #f85149; }
+  .status-label {
+    font-size: 11px;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Agents grid */
+  .agents {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  /* Agent panel */
+  .agent-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+    min-height: 280px;
+  }
+  .agent-panel.planner { border-top: 3px solid #58a6ff; }
+  .agent-panel.executor { border-top: 3px solid #d29922; }
+
+  .agent-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .agent-role {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .agent-panel.planner .agent-role { color: #58a6ff; }
+  .agent-panel.executor .agent-role { color: #d29922; }
+
+  .agent-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #8b949e;
+  }
+  .agent-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #484f58;
+  }
+  .agent-status-dot.active { background: #3fb950; animation: pulse 2s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #484f58;
+    margin: 12px 0 6px;
+    font-weight: 600;
+  }
+
+  /* Message list */
+  .msg-list { list-style: none; }
+  .msg-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .msg-item:hover { background: #1c2128; }
+  .msg-item.done { opacity: 0.5; }
+
+  .msg-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .msg-badge.task { background: #58a6ff20; color: #58a6ff; }
+  .msg-badge.result { background: #3fb95020; color: #3fb950; }
+  .msg-badge.question { background: #d2992220; color: #d29922; }
+  .msg-badge.block { background: #f8514920; color: #f85149; }
+
+  .msg-priority {
+    font-size: 9px;
+    font-weight: 800;
+    color: #f85149;
+    flex-shrink: 0;
+  }
+
+  .msg-body {
+    color: #c9d1d9;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .msg-id {
+    font-size: 9px;
+    color: #484f58;
+    flex-shrink: 0;
+  }
+
+  .msg-check {
+    color: #3fb950;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+
+  .empty {
+    color: #484f58;
+    font-size: 11px;
+    font-style: italic;
+    padding: 8px;
+  }
+
+  /* Counters */
+  .counters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .counter {
+    font-size: 24px;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+  .counter-label {
+    font-size: 10px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Message flow */
+  .flow-panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .flow-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e6edf3;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .flow-list { list-style: none; max-height: 200px; overflow-y: auto; }
+  .flow-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #21262d;
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .flow-time { color: #484f58; font-size: 10px; flex-shrink: 0; width: 45px; }
+  .flow-from { font-weight: 600; flex-shrink: 0; width: 65px; }
+  .flow-from.planner { color: #58a6ff; }
+  .flow-from.executor { color: #d29922; }
+  .flow-arrow { color: #484f58; flex-shrink: 0; }
+  .flow-to { color: #8b949e; flex-shrink: 0; width: 65px; }
+  .flow-body { color: #c9d1d9; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flow-ack { color: #3fb950; font-size: 10px; flex-shrink: 0; }
+
+  /* Disconnected overlay */
+  .disconnected {
+    position: fixed;
+    inset: 0;
+    background: #0d1117e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .disconnected-box {
+    background: #161b22;
+    border: 1px solid #f85149;
+    border-radius: 12px;
+    padding: 24px 32px;
+    text-align: center;
+  }
+  .disconnected-box h2 { color: #f85149; font-size: 14px; margin-bottom: 8px; }
+  .disconnected-box p { color: #8b949e; font-size: 12px; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="disconnected" class="disconnected">
+  <div class="disconnected-box">
+    <h2>Connecting...</h2>
+    <p>Waiting for claude-split monitor server on :7433</p>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>claude-split</h1>
+    <div id="statusDot" class="status-dot red"></div>
+  </div>
+  <span id="statusLabel" class="status-label">idle</span>
+</div>
+
+<!-- Agent panels -->
+<div class="agents">
+  <div class="agent-panel planner">
+    <div class="agent-header">
+      <span class="agent-role">Planner</span>
+      <div class="agent-status">
+        <div id="plannerDot" class="agent-status-dot"></div>
+        <span id="plannerStatus">idle</span>
+      </div>
+    </div>
+    <div class="counters">
+      <div><div id="plannerPending" class="counter">0</div><div class="counter-label">pending</div></div>
+      <div><div id="plannerDone" class="counter">0</div><div class="counter-label">done</div></div>
+    </div>
+    <div class="section-label">Pending</div>
+    <ul id="plannerPendingList" class="msg-list"><li class="empty">No pending messages</li></ul>
+    <div class="section-label">Completed</div>
+    <ul id="plannerDoneList" class="msg-list"><li class="empty">Nothing yet</li></ul>
+  </div>
+
+  <div class="agent-panel executor">
+    <div class="agent-header">
+      <span class="agent-role">Executor</span>
+      <div class="agent-status">
+        <div id="executorDot" class="agent-status-dot"></div>
+        <span id="executorStatus">idle</span>
+      </div>
+    </div>
+    <div class="counters">
+      <div><div id="executorPending" class="counter">0</div><div class="counter-label">pending</div></div>
+      <div><div id="executorDone" class="counter">0</div><div class="counter-label">done</div></div>
+    </div>
+    <div class="section-label">Pending</div>
+    <ul id="executorPendingList" class="msg-list"><li class="empty">No pending messages</li></ul>
+    <div class="section-label">Completed</div>
+    <ul id="executorDoneList" class="msg-list"><li class="empty">Nothing yet</li></ul>
+  </div>
+</div>
+
+<!-- Message flow -->
+<div class="flow-panel">
+  <div class="flow-header">Message Flow</div>
+  <ul id="flowList" class="flow-list"><li class="empty">No messages yet</li></ul>
+</div>
+
+<script>
+const WS_URL = `ws://${location.host}/ws`;
+let ws;
+let reconnectDelay = 1000;
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    document.getElementById('disconnected').classList.add('hidden');
+    reconnectDelay = 1000;
+  };
+
+  ws.onmessage = (e) => {
+    try {
+      const state = JSON.parse(e.data);
+      if (state.type === 'cowork_state') render(state);
+    } catch {}
+  };
+
+  ws.onclose = () => {
+    document.getElementById('disconnected').classList.remove('hidden');
+    setTimeout(connect, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 2, 15000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function render(state) {
+  // Overall status
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('statusLabel');
+  const s = state.status || 'idle';
+  dot.className = `status-dot ${s === 'active' ? 'green' : s === 'blocked' ? 'red' : 'yellow'}`;
+  label.textContent = s;
+
+  // Agent panels
+  renderAgent('planner', state.planner || { pending: [], done: [] });
+  renderAgent('executor', state.executor || { pending: [], done: [] });
+
+  // Flow
+  renderFlow(state.flow || []);
+}
+
+function renderAgent(role, data) {
+  const pending = data.pending || [];
+  const done = data.done || [];
+
+  document.getElementById(`${role}Pending`).textContent = pending.length;
+  document.getElementById(`${role}Done`).textContent = done.length;
+
+  // Status dot
+  const dot = document.getElementById(`${role}Dot`);
+  const statusEl = document.getElementById(`${role}Status`);
+  if (pending.length > 0) {
+    dot.className = 'agent-status-dot active';
+    statusEl.textContent = `${pending.length} pending`;
+  } else {
+    dot.className = 'agent-status-dot';
+    statusEl.textContent = 'idle';
+  }
+
+  // Pending list
+  const pendingList = document.getElementById(`${role}PendingList`);
+  if (pending.length === 0) {
+    pendingList.innerHTML = '<li class="empty">No pending messages</li>';
+  } else {
+    pendingList.innerHTML = pending.map(m => `
+      <li class="msg-item">
+        <span class="msg-badge ${m.type}">${typeBadge(m.type)}</span>
+        ${m.priority === 'p0' ? '<span class="msg-priority">!!</span>' : ''}
+        <span class="msg-body" title="${esc(m.body)}">${esc(trunc(m.body, 50))}</span>
+        <span class="msg-id">${m.id}</span>
+      </li>
+    `).join('');
+  }
+
+  // Done list (last 5)
+  const doneList = document.getElementById(`${role}DoneList`);
+  const recent = done.slice(-5).reverse();
+  if (recent.length === 0) {
+    doneList.innerHTML = '<li class="empty">Nothing yet</li>';
+  } else {
+    doneList.innerHTML = recent.map(m => `
+      <li class="msg-item done">
+        <span class="msg-check">&#10003;</span>
+        <span class="msg-body" title="${esc(m.body)}">${esc(trunc(m.body, 55))}</span>
+      </li>
+    `).join('');
+  }
+}
+
+function renderFlow(flow) {
+  const list = document.getElementById('flowList');
+  if (flow.length === 0) {
+    list.innerHTML = '<li class="empty">No messages yet</li>';
+    return;
+  }
+  list.innerHTML = flow.map(m => `
+    <li class="flow-item">
+      <span class="flow-time">${m.time || ''}</span>
+      <span class="flow-from ${m.from}">${m.from}</span>
+      <span class="flow-arrow">&rarr;</span>
+      <span class="flow-to">${m.to}</span>
+      <span class="msg-badge ${m.type}">${typeBadge(m.type)}</span>
+      <span class="flow-body" title="${esc(m.body)}">${esc(trunc(m.body, 40))}</span>
+      ${m.acked ? '<span class="flow-ack">ACK</span>' : ''}
+    </li>
+  `).join('');
+  list.scrollTop = list.scrollHeight;
+}
+
+function typeBadge(t) {
+  switch(t) {
+    case 'task': return 'TASK';
+    case 'result': return 'RSLT';
+    case 'question': return 'ASK?';
+    case 'block': return 'BLCK';
+    default: return t?.toUpperCase() || '?';
+  }
+}
+
+function trunc(s, n) {
+  if (!s) return '';
+  const one = s.replace(/\n/g, ' ').trim();
+  return one.length > n ? one.slice(0, n-1) + '\u2026' : one;
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+connect();
+</script>
+</body>
+</html>
