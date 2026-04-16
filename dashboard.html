@@ -30,6 +30,10 @@
     align-items: center;
     gap: 12px;
   }
+  .header-right {
+    display: flex;
+    align-items: center;
+  }
   .header h1 {
     font-size: 15px;
     font-weight: 600;
@@ -50,6 +54,80 @@
     color: #8b949e;
     text-transform: uppercase;
     letter-spacing: 1px;
+  }
+
+  /* KPI Strip */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e6edf3;
+    line-height: 1;
+  }
+  .kpi-value.cost { color: #3fb950; }
+  .kpi-value.warn { color: #d29922; }
+  .kpi-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #484f58;
+    margin-top: 4px;
+  }
+
+  /* Workload bar */
+  .workload-bar {
+    display: flex;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: #21262d;
+    margin-bottom: 16px;
+  }
+  .workload-segment {
+    height: 100%;
+    transition: width 0.5s ease;
+  }
+  .workload-segment.planner { background: #58a6ff; }
+  .workload-segment.executor { background: #d29922; }
+  .workload-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .workload-label {
+    font-size: 9px;
+    color: #484f58;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .workload-label .pct { color: #8b949e; font-weight: 600; }
+
+  /* Sparkline */
+  .sparkline-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 20px;
+    justify-content: center;
+  }
+  .spark-bar {
+    width: 3px;
+    background: #58a6ff;
+    border-radius: 1px;
+    min-height: 1px;
+    transition: height 0.3s;
   }
 
   /* Agents grid */
@@ -267,7 +345,51 @@
     <h1>claude-split</h1>
     <div id="statusDot" class="status-dot red"></div>
   </div>
-  <span id="statusLabel" class="status-label">idle</span>
+  <div class="header-right">
+    <span id="lastUpdated" class="status-label">--</span>
+    <span id="statusLabel" class="status-label" style="margin-left:12px">idle</span>
+  </div>
+</div>
+
+<!-- KPI Strip -->
+<div class="kpi-strip">
+  <div class="kpi-card">
+    <div id="kpiMessages" class="kpi-value">0</div>
+    <div class="kpi-label">messages</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiPending" class="kpi-value warn">0</div>
+    <div class="kpi-label">pending</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiDone" class="kpi-value">0</div>
+    <div class="kpi-label">done</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiCost" class="kpi-value cost">--</div>
+    <div class="kpi-label">est. cost</div>
+  </div>
+  <div class="kpi-card">
+    <div id="kpiTokens" class="kpi-value">--</div>
+    <div class="kpi-label">tokens</div>
+  </div>
+  <div class="kpi-card">
+    <div class="sparkline-container" id="sparkline"></div>
+    <div class="kpi-label">activity</div>
+  </div>
+</div>
+
+<!-- Workload Balance -->
+<div>
+  <div class="workload-labels">
+    <span class="workload-label">planner <span id="plannerPct" class="pct">50%</span></span>
+    <span class="workload-label">workload distribution</span>
+    <span class="workload-label"><span id="executorPct" class="pct">50%</span> executor</span>
+  </div>
+  <div class="workload-bar">
+    <div id="workloadPlanner" class="workload-segment planner" style="width:50%"></div>
+    <div id="workloadExecutor" class="workload-segment executor" style="width:50%"></div>
+  </div>
 </div>
 
 <!-- Agent panels -->
@@ -344,6 +466,10 @@ function connect() {
   ws.onerror = () => ws.close();
 }
 
+// Message history for sparkline
+const msgHistory = new Array(20).fill(0);
+let lastMsgCount = 0;
+
 function render(state) {
   // Overall status
   const dot = document.getElementById('statusDot');
@@ -352,12 +478,66 @@ function render(state) {
   dot.className = `status-dot ${s === 'active' ? 'green' : s === 'blocked' ? 'red' : 'yellow'}`;
   label.textContent = s;
 
+  // Last updated
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+  const p = state.planner || { pending: [], done: [] };
+  const e = state.executor || { pending: [], done: [] };
+  const totals = state.totals || {};
+
+  // KPI strip
+  const totalMsgs = (p.pending?.length||0) + (p.done?.length||0) + (e.pending?.length||0) + (e.done?.length||0);
+  const totalPending = (p.pending?.length||0) + (e.pending?.length||0);
+  const totalDone = (p.done?.length||0) + (e.done?.length||0);
+
+  document.getElementById('kpiMessages').textContent = totals.messages || totalMsgs;
+  document.getElementById('kpiPending').textContent = totalPending;
+  document.getElementById('kpiPending').className = `kpi-value${totalPending > 0 ? ' warn' : ''}`;
+  document.getElementById('kpiDone').textContent = totalDone;
+
+  // Cost + tokens (from Phase 3 server, graceful fallback)
+  const cost = totals.total_cost ?? ((p.cost_usd||0) + (e.cost_usd||0));
+  document.getElementById('kpiCost').textContent = cost > 0 ? `$${cost.toFixed(2)}` : '--';
+  const tokens = (p.tokens_in||0) + (p.tokens_out||0) + (e.tokens_in||0) + (e.tokens_out||0);
+  document.getElementById('kpiTokens').textContent = tokens > 0 ? fmtNum(tokens) : '--';
+
+  // Sparkline
+  msgHistory.push(totalMsgs - lastMsgCount);
+  msgHistory.shift();
+  lastMsgCount = totalMsgs;
+  renderSparkline();
+
+  // Workload balance
+  const plannerWork = (p.done?.length||0) + (p.pending?.length||0);
+  const executorWork = (e.done?.length||0) + (e.pending?.length||0);
+  const totalWork = plannerWork + executorWork || 1;
+  const pPct = Math.round((plannerWork / totalWork) * 100);
+  const ePct = 100 - pPct;
+  document.getElementById('workloadPlanner').style.width = pPct + '%';
+  document.getElementById('workloadExecutor').style.width = ePct + '%';
+  document.getElementById('plannerPct').textContent = pPct + '%';
+  document.getElementById('executorPct').textContent = ePct + '%';
+
   // Agent panels
-  renderAgent('planner', state.planner || { pending: [], done: [] });
-  renderAgent('executor', state.executor || { pending: [], done: [] });
+  renderAgent('planner', p);
+  renderAgent('executor', e);
 
   // Flow
   renderFlow(state.flow || []);
+}
+
+function renderSparkline() {
+  const el = document.getElementById('sparkline');
+  const max = Math.max(...msgHistory, 1);
+  el.innerHTML = msgHistory.map(v =>
+    `<div class="spark-bar" style="height:${Math.max(1, (v/max)*20)}px"></div>`
+  ).join('');
+}
+
+function fmtNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n;
 }
 
 function renderAgent(role, data) {
@@ -367,10 +547,17 @@ function renderAgent(role, data) {
   document.getElementById(`${role}Pending`).textContent = pending.length;
   document.getElementById(`${role}Done`).textContent = done.length;
 
-  // Status dot
+  // Status dot — alive from Phase 3, fallback to pending-based
   const dot = document.getElementById(`${role}Dot`);
   const statusEl = document.getElementById(`${role}Status`);
-  if (pending.length > 0) {
+  const alive = data.alive;
+  if (alive === true) {
+    dot.className = 'agent-status-dot active';
+    statusEl.textContent = pending.length > 0 ? `${pending.length} pending` : 'connected';
+  } else if (alive === false) {
+    dot.className = 'agent-status-dot';
+    statusEl.textContent = 'offline';
+  } else if (pending.length > 0) {
     dot.className = 'agent-status-dot active';
     statusEl.textContent = `${pending.length} pending`;
   } else {
