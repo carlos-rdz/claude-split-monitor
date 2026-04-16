@@ -7,20 +7,25 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --bg:   #000;
-    --fg:   #c9c9c9;
-    --dim:  #4a4a4a;
-    --dim2: #7a7a7a;
-    --bright: #eaeaea;
-    --border: #1a1a1a;
-    --planner:  #5fafff;
-    --executor: #d7af5f;
-    --green: #87d787;
-    --red:   #ff5f5f;
-    --yellow:#d7d75f;
-    --orange:#ff9f50;
+    --bg:       #0a0a0b;
+    --bg-2:     #111114;
+    --bg-3:     #17171c;
+    --fg:       #d0d0d5;
+    --dim:      #4a4a52;
+    --dim2:     #7a7a85;
+    --bright:   #f0f0f5;
+    --border:   #1e1e24;
+
+    --planner:      #5fafff;
+    --planner-bg:   #5fafff18;
+    --executor:     #d7af5f;
+    --executor-bg:  #d7af5f18;
+
+    --green:  #6dd36d;
+    --red:    #ff6b6b;
+    --yellow: #e6c76b;
+    --orange: #ff9f50;
     --magenta:#d787d7;
-    --cyan:  #5fd7d7;
   }
   html, body {
     background: var(--bg);
@@ -32,70 +37,96 @@
     overflow: hidden;
   }
 
-  /* ── Top bar ─────────────────────────────────────────────────── */
-  .topbar {
+  /* ─── Top bar ─────────────────────────────────────────────── */
+  .top {
     display: grid;
-    grid-template-columns: auto auto 1fr auto auto auto auto;
-    gap: 16px;
-    align-items: center;
-    padding: 6px 12px;
-    background: #060606;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 20px;
+    padding: 10px 18px;
+    background: var(--bg-2);
     border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .agent-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-size: 11px;
   }
-  .alive { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; }
-  .alive .dot {
-    width: 8px; height: 8px; border-radius: 50%;
+  .agent-badge.planner { justify-content: flex-start; }
+  .agent-badge.executor { justify-content: flex-end; }
+  .agent-badge .dot {
+    width: 9px; height: 9px; border-radius: 50%;
     background: var(--dim);
   }
-  .alive .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .alive .dot.stuck { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
-  .alive .dot.dead { background: var(--red); box-shadow: 0 0 6px var(--red); }
-  .alive .name { color: var(--bright); }
-  .alive.planner .name { color: var(--planner); }
-  .alive.executor .name { color: var(--executor); }
-  .alive .status { color: var(--dim2); font-weight: 400; font-size: 10px; }
+  .agent-badge .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .agent-badge .dot.stuck { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .agent-badge .name {
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .agent-badge.planner .name { color: var(--planner); }
+  .agent-badge.executor .name { color: var(--executor); }
+  .agent-badge .meta { color: var(--dim2); font-size: 10px; }
 
-  .kpi { display: inline-flex; gap: 6px; align-items: baseline; color: var(--dim2); }
-  .kpi .n { color: var(--bright); font-weight: 700; }
-  .kpi .n.cost { color: var(--green); }
-  .kpi .n.warn { color: var(--yellow); }
+  .collab-state {
+    text-align: center;
+    font-size: 11px;
+    color: var(--dim2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .collab-state .state {
+    color: var(--bright);
+    font-weight: 700;
+  }
+  .collab-state .state.waiting { color: var(--yellow); }
+  .collab-state .state.blocked { color: var(--red); }
+  .collab-state .state.active  { color: var(--green); }
+  .collab-state .cost {
+    display: block;
+    margin-top: 2px;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .collab-state .cost .dim { color: var(--dim2); font-weight: 400; font-size: 10px; }
 
-  .clock { color: var(--dim2); font-variant-numeric: tabular-nums; }
-
-  .conn { display: inline-flex; gap: 4px; align-items: center; color: var(--dim2); font-size: 10px; }
-  .conn .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .conn .dot.on { background: var(--green); }
-  .conn .dot.off { background: var(--red); }
-
-  /* ── Filter bar ──────────────────────────────────────────────── */
-  .filterbar {
+  /* ─── Toolbar ─────────────────────────────────────────────── */
+  .toolbar {
     display: flex;
-    gap: 4px;
-    padding: 4px 12px;
-    background: #040404;
-    border-bottom: 1px solid var(--border);
     align-items: center;
+    gap: 8px;
+    padding: 6px 18px;
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
     font-size: 10px;
-    flex-wrap: wrap;
+  }
+  .toolbar .label {
+    color: var(--dim2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 9px;
+    margin-right: 4px;
   }
   .pill {
-    padding: 3px 8px;
-    background: #111;
-    border: 1px solid #1f1f1f;
+    padding: 3px 9px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
     color: var(--dim2);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 3px;
     user-select: none;
+    font-size: 10px;
   }
   .pill:hover { color: var(--fg); }
-  .pill.on { background: #1a1a1a; color: var(--bright); border-color: #333; }
-  .pill.on.agent-planner  { color: var(--planner); border-color: var(--planner); }
-  .pill.on.agent-executor { color: var(--executor); border-color: var(--executor); }
-
+  .pill.on.both    { background: var(--bg-3); color: var(--bright); border-color: #2e2e34; }
+  .pill.on.planner { color: var(--planner); border-color: var(--planner); background: var(--planner-bg); }
+  .pill.on.executor { color: var(--executor); border-color: var(--executor); background: var(--executor-bg); }
   .search {
     flex: 1;
     background: transparent;
@@ -107,96 +138,211 @@
     outline: none;
   }
   .search::placeholder { color: var(--dim); }
+  .rate {
+    color: var(--dim2);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+  }
+  .clock {
+    color: var(--dim2);
+    font-variant-numeric: tabular-nums;
+    font-size: 10px;
+  }
 
-  .rate { color: var(--dim2); font-variant-numeric: tabular-nums; }
-
-  /* ── Main feed ───────────────────────────────────────────────── */
-  .feed-wrap {
-    height: calc(100vh - 28px - 30px - 18px);
+  /* ─── Swim lane container ─────────────────────────────────── */
+  .lanes-wrap {
+    height: calc(100vh - 56px - 26px - 22px);
     overflow-y: auto;
     position: relative;
+    padding: 16px 0;
   }
-  .feed {
-    font-variant-numeric: tabular-nums;
-  }
-  .evt {
-    display: grid;
-    grid-template-columns: 88px 72px 62px 1fr auto;
-    gap: 10px;
-    padding: 2px 12px;
-    border-left: 2px solid transparent;
-    align-items: baseline;
-    font-size: 12px;
-  }
-  .evt:hover { background: rgba(255,255,255,0.03); }
-  .evt.planner  { border-left-color: var(--planner); }
-  .evt.executor { border-left-color: var(--executor); }
-  .evt.system   { border-left-color: var(--dim2); }
-  .evt.git      { border-left-color: var(--magenta); }
 
-  .evt .time { color: var(--dim); font-size: 10px; white-space: nowrap; text-align: right; }
-  .evt .src  { font-weight: 700; font-size: 11px; text-transform: lowercase; }
-  .evt .src.planner  { color: var(--planner); }
-  .evt .src.executor { color: var(--executor); }
-  .evt .src.system   { color: var(--dim2); }
-  .evt .src.git      { color: var(--magenta); }
-  .evt .type {
+  /* The lane container uses grid for columns; rows stack */
+  .lanes {
+    display: grid;
+    grid-template-columns: 1fr 44px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px;
+    gap: 0;
+  }
+
+  /* Vertical guide lines */
+  .lanes::before,
+  .lanes::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    bottom: 16px;
+    width: 1px;
+    background: var(--border);
+  }
+  /* Note: these are relative to .lanes-wrap, positioned via JS-safe approach below */
+  .lanes-wrap::before,
+  .lanes-wrap::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    bottom: 16px;
+    width: 1px;
+    background: var(--border);
+    pointer-events: none;
+  }
+  .lanes-wrap::before { left: calc(50% - 22px - 1px); }
+  .lanes-wrap::after  { left: calc(50% + 22px); }
+
+  /* ─── Event rows ──────────────────────────────────────────── */
+  .row {
+    display: contents;
+  }
+  .row > .cell {
+    padding: 4px 10px;
+    min-height: 22px;
+  }
+  .row > .cell.col-planner  { grid-column: 1 / 2; }
+  .row > .cell.col-mid      { grid-column: 2 / 3; }
+  .row > .cell.col-executor { grid-column: 3 / 4; }
+
+  /* Action row */
+  .action {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12px;
+    padding: 2px 0;
+  }
+  .action.align-right { justify-content: flex-end; }
+  .action .time {
+    color: var(--dim);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .action .type {
     font-size: 10px;
     font-weight: 800;
-    letter-spacing: 0.3px;
-    color: var(--fg);
-    text-align: left;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
-  .evt .type.read   { color: var(--planner); }
-  .evt .type.edit, .evt .type.write { color: var(--green); }
-  .evt .type.bash   { color: var(--yellow); }
-  .evt .type.grep, .evt .type.glob { color: var(--magenta); }
-  .evt .type.think  { color: var(--dim2); font-style: italic; }
-  .evt .type.task   { color: var(--planner); }
-  .evt .type.result { color: var(--green); }
-  .evt .type.ask    { color: var(--yellow); }
-  .evt .type.block  { color: var(--red); }
-  .evt .type.commit { color: var(--magenta); }
-  .evt .type.alert  { color: var(--red); }
-  .evt .type.ack    { color: var(--green); }
-  .evt .body  { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .evt .body .dim { color: var(--dim2); }
-  .evt .meta  { color: var(--dim2); font-size: 10px; white-space: nowrap; }
-  .evt .meta .plus  { color: var(--green); }
-  .evt .meta .minus { color: var(--red); }
-  .evt.p0 .body { color: var(--orange); }
+  .action .type.read { color: var(--planner); }
+  .action .type.edit, .action .type.write { color: var(--green); }
+  .action .type.bash { color: var(--yellow); }
+  .action .type.grep, .action .type.glob { color: var(--magenta); }
+  .action .type.think { color: var(--dim2); font-style: italic; }
+  .action .type.tool { color: var(--fg); }
+  .action .target {
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .action .target.think { color: var(--dim2); font-style: italic; }
 
-  .empty {
-    color: var(--dim);
-    padding: 40px 12px;
+  /* Full-width message row (crosses both lanes) */
+  .msg-row {
+    display: contents;
+  }
+  .msg-full {
+    grid-column: 1 / 4;
+    margin: 6px 0;
+    padding: 10px 16px;
+    background: var(--bg-2);
+    border-radius: 4px;
+    border-left: 3px solid var(--planner);
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 14px;
+    align-items: center;
+  }
+  .msg-full.from-executor {
+    border-left: none;
+    border-right: 3px solid var(--executor);
+  }
+  .msg-full.type-task     { background: linear-gradient(90deg, var(--planner-bg), transparent); }
+  .msg-full.type-result   { background: linear-gradient(90deg, transparent, var(--executor-bg)); }
+  .msg-full.type-question { background: var(--yellow); background: linear-gradient(90deg, transparent, #e6c76b22); border-right-color: var(--yellow); }
+  .msg-full.type-block    { background: linear-gradient(90deg, transparent, #ff6b6b22); border-right-color: var(--red); }
+  .msg-full.type-ack      { background: transparent; border-left-color: var(--green); padding: 4px 16px; }
+
+  .msg-full .arrow {
+    font-size: 16px;
+    font-weight: 900;
+  }
+  .msg-full.from-planner .arrow { color: var(--planner); }
+  .msg-full.from-executor .arrow { color: var(--executor); }
+  .msg-full.type-ack .arrow { color: var(--green); }
+
+  .msg-full .label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--bright);
+    margin-right: 4px;
+  }
+  .msg-full .label.type-task     { color: var(--planner); }
+  .msg-full .label.type-result   { color: var(--green); }
+  .msg-full .label.type-question { color: var(--yellow); }
+  .msg-full .label.type-block    { color: var(--red); }
+  .msg-full .label.type-ack      { color: var(--green); }
+
+  .msg-full .body {
+    font-size: 12px;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .msg-full .meta {
+    font-size: 10px;
+    color: var(--dim2);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .msg-full .meta .cycle { color: var(--yellow); font-weight: 700; }
+  .msg-full .meta .p0 { color: var(--orange); font-weight: 800; }
+
+  /* Idle gap */
+  .gap {
+    grid-column: 1 / 4;
     text-align: center;
+    color: var(--dim);
+    font-size: 10px;
+    font-style: italic;
+    padding: 12px 0;
+    position: relative;
+  }
+  .gap::before, .gap::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 30%;
+    height: 1px;
+    background: var(--border);
+  }
+  .gap::before { left: 10%; }
+  .gap::after  { right: 10%; }
+
+  /* ─── Empty / disconnected ──────────────────────────────── */
+  .empty {
+    text-align: center;
+    color: var(--dim2);
+    padding: 60px 0;
+    font-size: 12px;
+    grid-column: 1 / 4;
+  }
+  .empty .hint {
+    color: var(--dim);
+    font-size: 10px;
+    margin-top: 8px;
     font-style: italic;
   }
 
-  /* ── Bottom status ──────────────────────────────────────────── */
-  .statusbar {
-    height: 18px;
-    padding: 2px 12px;
-    background: #060606;
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: var(--dim2);
-  }
-  .statusbar .key {
-    background: #1a1a1a;
-    color: var(--bright);
-    padding: 0 4px;
-    margin-right: 2px;
-    border-radius: 2px;
-    font-weight: 700;
-  }
-
-  /* ── Disconnected ──────────────────────────────────────────── */
   .disconnected {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.92);
+    background: rgba(10,10,11,0.95);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -204,85 +350,115 @@
     flex-direction: column;
     gap: 8px;
   }
-  .disconnected h2 { color: var(--red); font-size: 13px; font-weight: 700; letter-spacing: 2px; }
-  .disconnected p { color: var(--dim2); font-size: 11px; }
-  .disconnected code { background: #111; padding: 4px 10px; border-radius: 2px; color: var(--fg); font-size: 11px; }
+  .disconnected h2 { color: var(--red); font-size: 13px; letter-spacing: 2px; }
+  .disconnected p  { color: var(--dim2); font-size: 11px; }
+  .disconnected code {
+    background: var(--bg-2);
+    padding: 4px 12px;
+    border-radius: 3px;
+    color: var(--fg);
+    font-size: 11px;
+    border: 1px solid var(--border);
+  }
+
+  /* ─── Status bar ────────────────────────────────────────── */
+  .status {
+    height: 22px;
+    padding: 3px 18px;
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--dim2);
+    align-items: center;
+  }
+  .status .key {
+    background: var(--bg-3);
+    color: var(--bright);
+    padding: 0 5px;
+    margin: 0 2px;
+    border-radius: 2px;
+    font-weight: 700;
+  }
 
   .hidden { display: none !important; }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-  /* Flash animation for new events */
-  @keyframes flash {
-    0%   { background: rgba(95,175,255,0.15); }
+  /* Flash on new events */
+  @keyframes fade {
+    0%   { background: rgba(95,175,255,0.18); }
     100% { background: transparent; }
   }
-  .evt.new { animation: flash 1.2s ease-out; }
+  .row.new .action { animation: fade 1.2s ease-out; }
+  .msg-full.new { animation: fade 1.5s ease-out; }
+
+  @media (max-width: 900px) {
+    .lanes { grid-template-columns: 1fr 20px 1fr; padding: 0 12px; }
+    .top { grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 8px 12px; }
+    .agent-badge .meta { display: none; }
+  }
 </style>
 </head>
 <body>
 
-<!-- Disconnected overlay -->
 <div id="disconnected" class="disconnected">
   <h2>NO CONNECTION</h2>
   <p>waiting for claude-split-monitor server</p>
   <code>ws://localhost:7433/ws</code>
-  <p style="margin-top:16px; font-size: 10px;">install: <code>pip install claude-split-monitor</code></p>
+  <p style="margin-top:12px; font-size: 10px;">install: <code>pip install claude-split-monitor</code></p>
 </div>
 
 <!-- Top bar -->
-<div class="topbar">
-  <div id="plannerAlive" class="alive planner">
+<div class="top">
+  <div id="plannerBadge" class="agent-badge planner">
     <span class="dot"></span>
     <span class="name">planner</span>
-    <span class="status">offline</span>
+    <span class="meta" id="plannerMeta">offline</span>
   </div>
-  <div id="executorAlive" class="alive executor">
-    <span class="dot"></span>
+
+  <div class="collab-state">
+    <div><span class="state" id="collabState">idle</span></div>
+    <div class="cost"><span id="kpiCost">$0.00</span> <span class="dim">· <span id="kpiTokens">0</span> tok · <span id="clock">--:--:--</span></span></div>
+  </div>
+
+  <div id="executorBadge" class="agent-badge executor">
+    <span class="meta" id="executorMeta">offline</span>
     <span class="name">executor</span>
-    <span class="status">offline</span>
+    <span class="dot"></span>
   </div>
-  <span></span>
-  <span class="kpi">events <span id="eventCount" class="n">0</span></span>
-  <span class="kpi">tok <span id="kpiTokens" class="n">0</span></span>
-  <span class="kpi">cost <span id="kpiCost" class="n cost">$0.00</span></span>
-  <span class="clock" id="clock">--:--:--</span>
 </div>
 
-<!-- Filter bar -->
-<div class="filterbar">
-  <span class="pill on" data-filter="all" onclick="setFilter('all')">all</span>
-  <span class="pill" data-filter="planner" onclick="setFilter('planner')">planner</span>
-  <span class="pill" data-filter="executor" onclick="setFilter('executor')">executor</span>
-  <span class="pill" data-filter="msg" onclick="setFilter('msg')">msgs</span>
-  <span class="pill" data-filter="action" onclick="setFilter('action')">actions</span>
-  <span class="pill" data-filter="git" onclick="setFilter('git')">git</span>
-  <span class="pill" data-filter="alert" onclick="setFilter('alert')">alerts</span>
-  <input id="search" class="search" placeholder="filter events… (regex ok)" />
+<!-- Toolbar -->
+<div class="toolbar">
+  <span class="label">view</span>
+  <span class="pill on both" data-view="both" onclick="setView('both')">both</span>
+  <span class="pill" data-view="planner" onclick="setView('planner')">planner</span>
+  <span class="pill" data-view="executor" onclick="setView('executor')">executor</span>
+  <input id="search" class="search" placeholder="filter events…" />
   <span class="rate" id="rate">0/min</span>
-  <span class="conn">
-    <span id="connDot" class="dot off"></span>
-    <span id="connLabel">offline</span>
-  </span>
+  <span class="clock" id="connLabel" style="color: var(--green);">● live</span>
 </div>
 
-<!-- Main feed -->
-<div class="feed-wrap" id="feedWrap">
-  <div id="feed" class="feed">
-    <div class="empty">-- waiting for events --</div>
+<!-- Swim lanes -->
+<div class="lanes-wrap" id="lanesWrap">
+  <div id="lanes" class="lanes">
+    <div class="empty">
+      <div>waiting for session activity</div>
+      <div class="hint">start two Claude sessions in split mode to see the flow</div>
+    </div>
   </div>
 </div>
 
-<!-- Bottom status -->
-<div class="statusbar">
+<!-- Status bar -->
+<div class="status">
   <span id="statusLeft">claude-split</span>
   <span>
     <span class="key">/</span>search
-    <span class="key">A</span>ll
+    <span class="key">B</span>oth
     <span class="key">P</span>lanner
     <span class="key">E</span>xecutor
     <span class="key">F</span>ollow
@@ -290,21 +466,20 @@
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────
-const events = [];             // unified chronological event log
-const eventIds = new Set();    // dedupe
-let currentFilter = 'all';
-let searchRegex = null;
-let follow = true;             // auto-scroll to bottom on new event
+// ── State ─────────────────────────────────────────────────────
+const events = [];           // chronological unified event list
+const eventIds = new Set();
+const msgByKey = new Map();  // for ACK timing / cycle time
+let currentView = 'both';    // 'both' | 'planner' | 'executor'
+let searchText = '';
+let follow = true;
 let lastState = null;
-let ws, reconnectDelay = 1000;
+const recentTimes = [];
 
 const WS_URL = `ws://${location.host}/ws`;
+let ws, reconnectDelay = 1000;
 
-// Rate tracking
-const recentTimes = [];         // last 60 event arrival timestamps (ms)
-
-// ── Clock ──────────────────────────────────────────────────────
+// ── Clock tick ────────────────────────────────────────────────
 setInterval(() => {
   document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8);
   updateRate();
@@ -315,8 +490,8 @@ function connect() {
   ws = new WebSocket(WS_URL);
   ws.onopen = () => {
     document.getElementById('disconnected').classList.add('hidden');
-    document.getElementById('connDot').className = 'dot on';
-    document.getElementById('connLabel').textContent = 'live';
+    document.getElementById('connLabel').textContent = '● live';
+    document.getElementById('connLabel').style.color = 'var(--green)';
     reconnectDelay = 1000;
   };
   ws.onmessage = (e) => {
@@ -327,19 +502,19 @@ function connect() {
   };
   ws.onclose = () => {
     document.getElementById('disconnected').classList.remove('hidden');
-    document.getElementById('connDot').className = 'dot off';
-    document.getElementById('connLabel').textContent = 'offline';
+    document.getElementById('connLabel').textContent = '○ offline';
+    document.getElementById('connLabel').style.color = 'var(--red)';
     setTimeout(connect, reconnectDelay);
     reconnectDelay = Math.min(reconnectDelay * 2, 15000);
   };
   ws.onerror = () => ws.close();
 }
 
-// ── Ingest: flatten state into event log ──────────────────────
+// ── Ingest ────────────────────────────────────────────────────
 function ingest(s) {
   const now = Date.now();
 
-  // Actions per agent
+  // Actions
   for (const role of ['planner', 'executor']) {
     const d = s[role] || {};
     for (const a of (d.recent_actions || [])) {
@@ -347,177 +522,258 @@ function ingest(s) {
       if (eventIds.has(id)) continue;
       eventIds.add(id);
       events.push({
-        id, kind: 'action', src: role,
+        kind: 'action',
+        id,
+        src: role,
         type: (a.type || 'tool').toLowerCase(),
         at: a.at || now,
-        body: a.target || a.type || '',
+        target: a.target || a.type || '',
+        isNew: true,
       });
       recentTimes.push(now);
     }
   }
 
-  // Messages (from flow)
+  // Messages (from flow) — filter git out, fold messages into swim-lane format
   for (const m of (s.flow || [])) {
     const id = `msg-${m.id}-${m.type}`;
     if (eventIds.has(id)) continue;
     eventIds.add(id);
-    events.push({
-      id, kind: 'msg', src: m.from || 'system',
+
+    const from = m.from || 'planner';
+    const to = m.to || (from === 'planner' ? 'executor' : 'planner');
+    const at = Date.now(); // messages have date-only IDs; use arrival time
+
+    const evt = {
+      kind: 'msg',
+      id,
+      src: from,
+      dst: to,
       type: m.type || 'task',
-      at: parseMsgTime(m.id) || now,
-      body: `${m.from}${m.to ? ' → ' + m.to : ''}: ${m.body || ''}`,
+      at,
+      body: m.body || '',
       priority: m.priority,
       acked: m.acked,
-    });
+      msgId: m.id,
+      isNew: true,
+    };
+    events.push(evt);
+    msgByKey.set(m.id + '-' + m.type, evt);
     recentTimes.push(now);
-    // Also emit ACK event if message was ACK'd
+
+    // Emit ACK event if message was ACK'd — as a collapsed mini-event
     if (m.acked) {
-      const ackId = `ack-${m.id}`;
+      const ackId = `ack-${m.id}-${m.type}`;
       if (!eventIds.has(ackId)) {
         eventIds.add(ackId);
+        const cycleMs = at - (msgByKey.get(m.id + '-task')?.at || at);
         events.push({
-          id: ackId, kind: 'ack', src: m.to || 'system',
-          type: 'ack', at: (parseMsgTime(m.id) || now) + 1,
+          kind: 'ack',
+          id: ackId,
+          src: to,     // acker is the receiver
+          dst: from,
+          type: 'ack',
+          at: at + 1,
           body: `ACK ${m.id}`,
+          cycleMs,
+          isNew: true,
         });
       }
     }
   }
 
-  // Git commits
-  for (const c of ((s.git || {}).commits || [])) {
-    const id = `git-${c.sha}`;
-    if (eventIds.has(id)) continue;
-    eventIds.add(id);
-    events.push({
-      id, kind: 'git', src: 'git',
-      type: 'commit',
-      at: c.at || now,
-      body: c.msg || '',
-      sha: (c.sha || '').slice(0, 7),
-      added: c.added || 0,
-      removed: c.removed || 0,
-      author: c.author_role,
-    });
-  }
-
-  // Alerts
+  // Alerts → collab event
   for (const a of (s.alerts || [])) {
     const id = `alert-${a.agent || 'sys'}-${a.text}`;
     if (eventIds.has(id)) continue;
     eventIds.add(id);
     events.push({
-      id, kind: 'alert', src: a.agent || 'system',
+      kind: 'alert',
+      id,
+      src: a.agent || 'system',
       type: 'alert',
       at: a.since || now,
       body: a.text || '',
       severity: a.severity,
+      isNew: true,
     });
   }
 
   events.sort((a, b) => (a.at || 0) - (b.at || 0));
 }
 
-function parseMsgTime(msgId) {
-  // MSG-YYYYMMDD-NNN — no HMS, just use current for now
-  return null;
-}
-
-// ── Render ─────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────
 function render() {
   if (!lastState) return;
-  renderTopBar(lastState);
-  renderFeed();
+  renderTop(lastState);
+  renderLanes();
 }
 
-function renderTopBar(s) {
+function renderTop(s) {
   const p = s.planner || {};
   const e = s.executor || {};
   const totals = s.totals || {};
 
-  for (const [role, d] of [['planner', p], ['executor', e]]) {
-    const el = document.getElementById(`${role}Alive`);
-    const dot = el.querySelector('.dot');
-    const status = el.querySelector('.status');
-    const stuck = d.stuck_seconds || 0;
-    if (!d.alive) { dot.className = 'dot'; status.textContent = 'offline'; }
-    else if (stuck > 180) { dot.className = 'dot stuck'; status.textContent = `stuck ${fmtRel(stuck)}`; }
-    else if (stuck > 60) { dot.className = 'dot stuck'; status.textContent = `idle ${fmtRel(stuck)}`; }
-    else { dot.className = 'dot on'; status.textContent = 'live'; }
-  }
+  renderBadge('planner', p);
+  renderBadge('executor', e);
+
+  // Collab state — the real story
+  const pPending = (p.pending || []).length;
+  const ePending = (e.pending || []).length;
+  const hasQuestion = (p.pending || []).some(m => m.type === 'question' && !m.acked);
+
+  let state = 'idle', cls = '';
+  if (hasQuestion) { state = 'planner waiting on answer'; cls = 'waiting'; }
+  else if (pPending > 0 && ePending > 0) { state = 'both active'; cls = 'active'; }
+  else if (ePending > 0) { state = 'executor working'; cls = 'active'; }
+  else if (pPending > 0) { state = 'planner reviewing'; cls = 'active'; }
+  else if (p.alive && e.alive) { state = 'both idle'; cls = ''; }
+  else if (p.alive) { state = 'solo: planner'; cls = ''; }
+  else if (e.alive) { state = 'solo: executor'; cls = ''; }
+
+  const stateEl = document.getElementById('collabState');
+  stateEl.textContent = state;
+  stateEl.className = `state ${cls}`;
 
   const cost = totals.total_cost ?? ((p.cost_usd || 0) + (e.cost_usd || 0));
   document.getElementById('kpiCost').textContent = `$${cost.toFixed(2)}`;
   const toks = (p.tokens_in || 0) + (p.tokens_out || 0) + (e.tokens_in || 0) + (e.tokens_out || 0);
   document.getElementById('kpiTokens').textContent = fmtNum(toks);
-  document.getElementById('eventCount').textContent = events.length;
 
   const dir = s.split_dir ? s.split_dir.split('/').slice(-3).join('/') : 'no inbox';
-  document.getElementById('statusLeft').textContent = `claude-split · ${dir}`;
+  const eventCount = events.length;
+  document.getElementById('statusLeft').textContent = `claude-split · ${dir} · ${eventCount} events`;
 }
 
-function renderFeed() {
-  const feed = document.getElementById('feed');
+function renderBadge(role, d) {
+  const el = document.getElementById(`${role}Badge`);
+  const dot = el.querySelector('.dot');
+  const meta = document.getElementById(`${role}Meta`);
+  const stuck = d.stuck_seconds || 0;
+  if (!d.alive) { dot.className = 'dot'; meta.textContent = 'offline'; }
+  else if (stuck > 180) { dot.className = 'dot stuck'; meta.textContent = `stuck ${fmtRel(stuck)}`; }
+  else if (stuck > 60) { dot.className = 'dot stuck'; meta.textContent = `idle ${fmtRel(stuck)}`; }
+  else { dot.className = 'dot on'; meta.textContent = 'active'; }
+}
+
+function renderLanes() {
+  const lanes = document.getElementById('lanes');
   const filtered = events.filter(eventMatches);
+
   if (filtered.length === 0) {
-    feed.innerHTML = '<div class="empty">-- no events match filter --</div>';
+    lanes.innerHTML = `<div class="empty">
+      <div>waiting for session activity</div>
+      <div class="hint">start two Claude sessions in split mode to see the flow</div>
+    </div>`;
     return;
   }
-  // Keep last 500 for performance
-  const show = filtered.slice(-500);
-  feed.innerHTML = show.map(eventHTML).join('');
+
+  // Render with idle-gap collapsing
+  const rows = [];
+  let lastAt = null;
+  const IDLE_THRESHOLD_MS = 60_000; // 60s idle collapses
+
+  for (const e of filtered) {
+    if (lastAt && e.at - lastAt > IDLE_THRESHOLD_MS) {
+      const gapSec = Math.floor((e.at - lastAt) / 1000);
+      rows.push(`<div class="gap">· · · ${fmtRel(gapSec)} idle · · ·</div>`);
+    }
+    rows.push(renderEvent(e));
+    lastAt = e.at;
+  }
+
+  lanes.innerHTML = rows.join('');
+
+  // Clear isNew flags after render
+  for (const e of events) e.isNew = false;
+
+  // Auto-scroll
   if (follow) {
-    const wrap = document.getElementById('feedWrap');
+    const wrap = document.getElementById('lanesWrap');
     wrap.scrollTop = wrap.scrollHeight;
   }
 }
 
 function eventMatches(e) {
-  // Filter
-  if (currentFilter !== 'all') {
-    if (currentFilter === 'planner'   && e.src !== 'planner') return false;
-    if (currentFilter === 'executor'  && e.src !== 'executor') return false;
-    if (currentFilter === 'msg'       && e.kind !== 'msg' && e.kind !== 'ack') return false;
-    if (currentFilter === 'action'    && e.kind !== 'action') return false;
-    if (currentFilter === 'git'       && e.kind !== 'git') return false;
-    if (currentFilter === 'alert'     && e.kind !== 'alert') return false;
-  }
-  // Search
-  if (searchRegex) {
-    const hay = `${e.src} ${e.type} ${e.body}`.toLowerCase();
-    if (!searchRegex.test(hay)) return false;
+  if (currentView === 'planner' && e.src !== 'planner' && e.dst !== 'planner') return false;
+  if (currentView === 'executor' && e.src !== 'executor' && e.dst !== 'executor') return false;
+  if (searchText) {
+    const hay = `${e.src || ''} ${e.type} ${e.body || ''} ${e.target || ''}`.toLowerCase();
+    if (!hay.includes(searchText)) return false;
   }
   return true;
 }
 
-function eventHTML(e) {
+function renderEvent(e) {
   const time = fmtTime(e.at);
-  const srcClass = e.kind === 'git' ? 'git' : (e.src === 'system' ? 'system' : e.src);
-  const evtClass = `evt ${srcClass}${e.priority === 'p0' ? ' p0' : ''}`;
+  const newCls = e.isNew ? ' new' : '';
 
-  let meta = '';
-  if (e.kind === 'git') {
-    const plus = e.added ? `<span class="plus">+${e.added}</span>` : '';
-    const minus = e.removed ? `<span class="minus">-${e.removed}</span>` : '';
-    meta = `${plus} ${minus} ${e.sha || ''}`;
+  if (e.kind === 'action') {
+    // Lives in its agent's lane
+    const col = e.src === 'planner' ? 'col-planner' : 'col-executor';
+    const alignRight = e.src === 'executor' ? ' align-right' : '';
+    const inner = `
+      <div class="action${alignRight}">
+        <span class="time">${time}</span>
+        <span class="type ${e.type}">${esc(e.type)}</span>
+        <span class="target${e.type === 'think' ? ' think' : ''}">${esc(truncate(e.target, 60))}</span>
+      </div>
+    `;
+    // Use a row with empty other side for grid alignment
+    if (e.src === 'planner') {
+      return `<div class="row${newCls}">
+        <div class="cell col-planner">${inner}</div>
+        <div class="cell col-mid"></div>
+        <div class="cell col-executor"></div>
+      </div>`;
+    } else {
+      return `<div class="row${newCls}">
+        <div class="cell col-planner"></div>
+        <div class="cell col-mid"></div>
+        <div class="cell col-executor">${inner}</div>
+      </div>`;
+    }
   }
-  if (e.priority === 'p0') meta = `p0 ${meta}`;
 
-  let body = esc(e.body || '');
-  if (e.kind === 'msg' && e.acked) body += ' <span class="dim">✓</span>';
+  if (e.kind === 'msg' || e.kind === 'ack') {
+    const from = e.src;
+    const type = e.type;
+    const arrow = from === 'planner' ? '→' : '←';
+    const typeLabels = {
+      task: 'TASK', result: 'RESULT', question: 'QUESTION',
+      block: 'BLOCKED', ack: 'ACK'
+    };
+    const label = typeLabels[type] || type.toUpperCase();
 
-  return `
-    <div class="${evtClass}">
-      <span class="time">${time}</span>
-      <span class="src ${srcClass}">${esc(e.src)}</span>
-      <span class="type ${e.type}">${esc(e.type.toUpperCase())}</span>
-      <span class="body">${body}</span>
-      <span class="meta">${meta}</span>
-    </div>
-  `;
+    let metaParts = [];
+    if (e.priority === 'p0') metaParts.push('<span class="p0">p0</span>');
+    if (e.cycleMs) metaParts.push(`<span class="cycle">cycle ${fmtDuration(e.cycleMs)}</span>`);
+    if (type === 'ack') metaParts.push('✓');
+    const meta = metaParts.join(' · ');
+
+    return `<div class="msg-row${newCls}">
+      <div class="msg-full from-${from} type-${type}">
+        <span class="arrow">${arrow}</span>
+        <span><span class="label type-${type}">${label}</span><span class="body">${esc(truncate(e.body, 160))}</span></span>
+        <span class="meta">${meta} <span style="color:var(--dim)">${time}</span></span>
+      </div>
+    </div>`;
+  }
+
+  if (e.kind === 'alert') {
+    return `<div class="msg-row${newCls}">
+      <div class="msg-full type-block">
+        <span class="arrow" style="color:var(--red)">⚠</span>
+        <span><span class="label type-block">ALERT</span><span class="body">${esc(e.body)}</span></span>
+        <span class="meta" style="color:var(--dim)">${time}</span>
+      </div>
+    </div>`;
+  }
+
+  return '';
 }
 
-// ── Helpers ────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 function fmtTime(ms) {
   if (!ms) return '--:--:--';
   return new Date(ms).toTimeString().slice(0,8);
@@ -527,10 +783,21 @@ function fmtRel(sec) {
   if (sec < 3600) return `${Math.floor(sec/60)}m`;
   return `${Math.floor(sec/3600)}h`;
 }
+function fmtDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) { const m = Math.floor(s/60); const r = s%60; return r ? `${m}m${r}s` : `${m}m`; }
+  return `${Math.floor(s/3600)}h`;
+}
 function fmtNum(n) {
   if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
   if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
   return String(n);
+}
+function truncate(s, n) {
+  if (!s) return '';
+  const clean = s.replace(/\n/g, ' ').trim();
+  return clean.length > n ? clean.slice(0, n-1) + '…' : clean;
 }
 function esc(s) {
   if (s === null || s === undefined) return '';
@@ -538,52 +805,263 @@ function esc(s) {
 }
 function updateRate() {
   const now = Date.now();
-  // Keep only events from last 60s
   while (recentTimes.length && now - recentTimes[0] > 60000) recentTimes.shift();
-  const perMin = recentTimes.length;
-  document.getElementById('rate').textContent = `${perMin}/min`;
+  document.getElementById('rate').textContent = `${recentTimes.length}/min`;
 }
 
-// ── Filters + search ──────────────────────────────────────────
-function setFilter(f) {
-  currentFilter = f;
-  document.querySelectorAll('.pill[data-filter]').forEach(p => {
-    const on = p.dataset.filter === f;
-    p.classList.toggle('on', on);
-    if (on && (f === 'planner' || f === 'executor')) p.classList.add(`agent-${f}`);
-    else p.classList.remove('agent-planner', 'agent-executor');
+// ── Controls ──────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.pill[data-view]').forEach(p => {
+    const on = p.dataset.view === v;
+    p.classList.remove('on', 'both', 'planner', 'executor');
+    if (on) p.classList.add('on', v);
   });
-  renderFeed();
+  renderLanes();
 }
 
 document.getElementById('search').addEventListener('input', (e) => {
-  const v = e.target.value.trim();
-  if (!v) { searchRegex = null; renderFeed(); return; }
-  try { searchRegex = new RegExp(v, 'i'); } catch { searchRegex = null; }
-  renderFeed();
+  searchText = e.target.value.trim().toLowerCase();
+  renderLanes();
 });
 
-// Follow toggle — pause on scroll-up
-document.getElementById('feedWrap').addEventListener('scroll', (e) => {
-  const wrap = e.target;
-  const atBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 30;
-  follow = atBottom;
+document.getElementById('lanesWrap').addEventListener('scroll', (e) => {
+  const w = e.target;
+  follow = w.scrollHeight - w.scrollTop - w.clientHeight < 40;
 });
 
-// Keyboard
 document.addEventListener('keydown', (ev) => {
-  if (ev.target.tagName === 'INPUT') return;
+  if (ev.target.tagName === 'INPUT') {
+    if (ev.key === 'Escape') ev.target.blur();
+    return;
+  }
   const k = ev.key.toLowerCase();
-  if (k === 'a') setFilter('all');
-  else if (k === 'p') setFilter('planner');
-  else if (k === 'e') setFilter('executor');
-  else if (k === 'g') setFilter('git');
-  else if (k === 'f') { follow = true; const w = document.getElementById('feedWrap'); w.scrollTop = w.scrollHeight; }
+  if (k === 'b') setView('both');
+  else if (k === 'p') setView('planner');
+  else if (k === 'e') setView('executor');
+  else if (k === 'f') {
+    follow = true;
+    const w = document.getElementById('lanesWrap');
+    w.scrollTop = w.scrollHeight;
+  }
   else if (k === '/') { ev.preventDefault(); document.getElementById('search').focus(); }
-  else if (k === 'escape') { document.getElementById('search').value = ''; searchRegex = null; renderFeed(); }
 });
 
-connect();
+// ── Demo mode (#demo=easy|medium|hard) ────────────────────────
+const demoMode = (location.hash.match(/demo=(\w+)/) || [])[1];
+if (demoMode) {
+  runDemo(demoMode);
+} else {
+  connect();
+}
+
+function runDemo(level) {
+  document.getElementById('disconnected').classList.add('hidden');
+  document.getElementById('connLabel').textContent = `● demo: ${level}`;
+  document.getElementById('connLabel').style.color = 'var(--yellow)';
+
+  const scenarios = {
+    easy: [
+      { kind: 'state', planner_alive: true, executor_alive: true, cost: 0 },
+      { dt: 1000, kind: 'action', src: 'planner', type: 'think', body: 'need to fix the discount code bug' },
+      { dt: 2500, kind: 'action', src: 'planner', type: 'read', body: 'src/lib/discounts.ts' },
+      { dt: 3000, kind: 'msg', src: 'planner', dst: 'executor', type: 'task',
+        body: 'Fix MAGA20 and EAGLE15 — missing from DISCOUNT_MAP' },
+      { dt: 2000, kind: 'action', src: 'executor', type: 'read', body: 'src/lib/discounts.ts' },
+      { dt: 2500, kind: 'action', src: 'executor', type: 'edit', body: 'src/lib/discounts.ts (+8 -0)' },
+      { dt: 1800, kind: 'action', src: 'executor', type: 'bash', body: 'npx tsc --noEmit' },
+      { dt: 1500, kind: 'msg', src: 'executor', dst: 'planner', type: 'result',
+        body: 'Done. tsc clean. Both codes added with 20% and 15% discount.' },
+      { dt: 800, kind: 'ack', src: 'planner', dst: 'executor', body: 'ACK — cycle 12s', cycleMs: 12000 },
+    ],
+    medium: [
+      { kind: 'state', planner_alive: true, executor_alive: true, cost: 0.14 },
+      { dt: 500, kind: 'action', src: 'planner', type: 'think', body: 'session starting: 3 tasks to ship' },
+      { dt: 1200, kind: 'action', src: 'planner', type: 'read', body: 'src/app/checkout/route.ts' },
+      { dt: 1800, kind: 'msg', src: 'planner', dst: 'executor', type: 'task', priority: 'p0',
+        body: 'Fix discount codes — MAGA20, EAGLE15 missing from DISCOUNT_MAP' },
+      { dt: 1500, kind: 'action', src: 'executor', type: 'read', body: 'src/lib/discounts.ts' },
+      { dt: 2000, kind: 'action', src: 'executor', type: 'edit', body: 'src/lib/discounts.ts (+12 -0)' },
+      { dt: 900, kind: 'action', src: 'planner', type: 'think', body: 'also need to clean up testimonials' },
+      { dt: 1800, kind: 'action', src: 'executor', type: 'bash', body: 'npx tsc --noEmit' },
+      { dt: 1200, kind: 'msg', src: 'executor', dst: 'planner', type: 'result',
+        body: 'Discount codes fixed. tsc clean. Pushed.' },
+      { dt: 600, kind: 'ack', src: 'planner', dst: 'executor', body: 'ACK — cycle 35s', cycleMs: 35000 },
+      { dt: 1500, kind: 'msg', src: 'planner', dst: 'executor', type: 'task',
+        body: 'Remove fake testimonials from src/app/page.tsx lines 356-444' },
+      { dt: 1200, kind: 'action', src: 'executor', type: 'read', body: 'src/app/page.tsx' },
+      { dt: 2500, kind: 'action', src: 'executor', type: 'edit', body: 'src/app/page.tsx (-89 lines)' },
+      { dt: 1800, kind: 'msg', src: 'executor', dst: 'planner', type: 'question',
+        body: 'Star import still used by trust section line 334. Remove that too?' },
+      { dt: 4000, kind: 'alert', text: 'planner: waiting on question 4m', severity: 'warn' },
+    ],
+    hard: [
+      { kind: 'state', planner_alive: true, executor_alive: true, cost: 0.42 },
+      { dt: 300, kind: 'action', src: 'planner', type: 'think', body: 'audit findings: 10 bugs to fix' },
+      { dt: 800, kind: 'action', src: 'planner', type: 'grep', body: '"DISCOUNT_MAP"' },
+      { dt: 600, kind: 'action', src: 'planner', type: 'read', body: 'src/app/api/checkout/route.ts' },
+      { dt: 1000, kind: 'msg', src: 'planner', dst: 'executor', type: 'task', priority: 'p0',
+        body: 'Fix discount codes — 4 missing from DISCOUNT_MAP' },
+      { dt: 1200, kind: 'action', src: 'executor', type: 'read', body: 'src/lib/discounts.ts' },
+      { dt: 1500, kind: 'action', src: 'executor', type: 'edit', body: 'src/lib/discounts.ts (+12 -0)' },
+      { dt: 600, kind: 'action', src: 'planner', type: 'read', body: 'src/app/page.tsx' },
+      { dt: 1800, kind: 'action', src: 'executor', type: 'bash', body: 'npx tsc --noEmit' },
+      { dt: 400, kind: 'msg', src: 'planner', dst: 'executor', type: 'task',
+        body: 'Remove fake testimonials (lines 356-444)' },
+      { dt: 900, kind: 'msg', src: 'executor', dst: 'planner', type: 'result',
+        body: 'Discount codes done. tsc clean.' },
+      { dt: 500, kind: 'ack', src: 'planner', body: 'ACK', cycleMs: 6200 },
+      { dt: 1200, kind: 'action', src: 'executor', type: 'edit', body: 'src/app/page.tsx (-89)' },
+      { dt: 800, kind: 'action', src: 'planner', type: 'think', body: 'next: race condition in credits.ts' },
+      { dt: 1500, kind: 'action', src: 'executor', type: 'bash', body: 'npx tsc --noEmit' },
+      { dt: 600, kind: 'msg', src: 'executor', dst: 'planner', type: 'question',
+        body: 'Star import used by trust section line 334. Keep or remove?' },
+      { dt: 4000, kind: 'alert', text: 'planner: waiting on question 4m', severity: 'warn' },
+      { dt: 2000, kind: 'msg', src: 'planner', dst: 'executor', type: 'result',
+        body: 'Keep the Star — trust section stays.' },
+      { dt: 300, kind: 'ack', src: 'executor', body: 'ACK', cycleMs: 6500 },
+      { dt: 1000, kind: 'msg', src: 'planner', dst: 'executor', type: 'task', priority: 'p0',
+        body: 'Fix consumeCredit race — atomic Lua script in credits.ts' },
+      { dt: 1500, kind: 'action', src: 'executor', type: 'read', body: 'src/lib/credits.ts' },
+      { dt: 2000, kind: 'action', src: 'executor', type: 'edit', body: 'src/lib/credits.ts (+18 -9)' },
+      { dt: 800, kind: 'action', src: 'planner', type: 'read', body: 'src/lib/credits.ts' },
+      { dt: 1800, kind: 'action', src: 'executor', type: 'bash', body: 'npx tsc --noEmit' },
+      { dt: 1200, kind: 'msg', src: 'executor', dst: 'planner', type: 'result',
+        body: 'Atomic Lua shipped. Race closed. tsc clean.' },
+      { dt: 500, kind: 'ack', src: 'planner', body: 'ACK', cycleMs: 8500 },
+      { dt: 2500, kind: 'action', src: 'executor', type: 'bash', body: 'git add -A && git commit' },
+      { dt: 1200, kind: 'action', src: 'executor', type: 'bash', body: 'git push' },
+      { dt: 3000, kind: 'msg', src: 'planner', dst: 'executor', type: 'task',
+        body: 'Add biometric consent checkbox to upload flow' },
+      { dt: 1500, kind: 'action', src: 'executor', type: 'read', body: 'src/app/create/page.tsx' },
+      { dt: 900, kind: 'action', src: 'executor', type: 'think', body: 'need to wire state + BIPA disclosure' },
+      { dt: 2500, kind: 'action', src: 'executor', type: 'edit', body: 'src/app/create/page.tsx (+32 -4)' },
+      { dt: 2000, kind: 'action', src: 'executor', type: 'bash', body: 'npx tsc --noEmit' },
+      { dt: 800, kind: 'msg', src: 'executor', dst: 'planner', type: 'result',
+        body: 'Consent checkbox added, upload disabled until checked.' },
+      { dt: 400, kind: 'ack', src: 'planner', body: 'ACK', cycleMs: 12800 },
+      { dt: 2000, kind: 'action', src: 'planner', type: 'think', body: 'phase 5 complete, review diff' },
+      { dt: 1500, kind: 'action', src: 'planner', type: 'bash', body: 'git log --oneline -5' },
+      { dt: 1000, kind: 'msg', src: 'planner', dst: 'executor', type: 'task',
+        body: 'Kill 3 wasteful crons in vercel.json' },
+      { dt: 1500, kind: 'action', src: 'executor', type: 'edit', body: 'vercel.json (-18)' },
+      { dt: 900, kind: 'msg', src: 'executor', dst: 'planner', type: 'result',
+        body: 'Crons killed. Ready to deploy.' },
+      { dt: 300, kind: 'ack', src: 'planner', body: 'ACK', cycleMs: 4200 },
+    ],
+  };
+
+  const script = scenarios[level] || scenarios.easy;
+  const startAt = Date.now();
+  let idx = 0;
+  let cumDt = 0;
+  let cost = 0;
+
+  // Base state
+  const base = script[0];
+  const fakeState = {
+    type: 'cowork_state',
+    status: 'active',
+    split_dir: `/demo/${level}`,
+    planner: {
+      alive: base.planner_alive,
+      stuck_seconds: 0,
+      cost_usd: 0,
+      tokens_in: 0, tokens_out: 0,
+      recent_actions: [],
+      pending: [], done: [],
+    },
+    executor: {
+      alive: base.executor_alive,
+      stuck_seconds: 0,
+      cost_usd: 0,
+      tokens_in: 0, tokens_out: 0,
+      recent_actions: [],
+      pending: [], done: [],
+    },
+    totals: { total_cost: base.cost || 0, messages: 0, pending: 0, done: 0, uptime_s: 0 },
+    flow: [],
+    alerts: [],
+    git: { commits: [] },
+  };
+
+  function tick() {
+    if (idx >= script.length) return;
+    const step = script[idx++];
+    if (step.kind === 'state') { /* initial setup already done */ tick(); return; }
+
+    cumDt += (step.dt || 100);
+    const now = startAt + cumDt;
+
+    // Push directly into events with the proper timestamp
+    if (step.kind === 'action') {
+      fakeState[step.src].tokens_in += 200 + Math.floor(Math.random()*300);
+      fakeState[step.src].tokens_out += 50 + Math.floor(Math.random()*100);
+      fakeState[step.src].cost_usd += 0.002;
+      events.push({
+        kind: 'action',
+        id: `demo-act-${idx}`,
+        src: step.src,
+        type: step.type,
+        at: now,
+        target: step.body,
+        isNew: true,
+      });
+    }
+    if (step.kind === 'msg') {
+      events.push({
+        kind: 'msg',
+        id: `demo-msg-${idx}`,
+        src: step.src, dst: step.dst,
+        type: step.type,
+        at: now,
+        body: step.body,
+        priority: step.priority,
+        acked: false,
+        isNew: true,
+      });
+      fakeState.totals.messages++;
+    }
+    if (step.kind === 'ack') {
+      // Mark previous message as acked
+      const prev = [...events].reverse().find(e => e.kind === 'msg' && !e.acked);
+      if (prev) prev.acked = true;
+      events.push({
+        kind: 'ack',
+        id: `demo-ack-${idx}`,
+        src: step.src,
+        type: 'ack',
+        at: now,
+        body: step.body || 'ACK',
+        cycleMs: step.cycleMs,
+        isNew: true,
+      });
+    }
+    if (step.kind === 'alert') {
+      events.push({
+        kind: 'alert',
+        id: `demo-alert-${idx}`,
+        src: 'system',
+        type: 'alert',
+        at: now,
+        body: step.text,
+        severity: step.severity,
+        isNew: true,
+      });
+    }
+
+    // Update totals
+    fakeState.totals.total_cost = fakeState.planner.cost_usd + fakeState.executor.cost_usd;
+    fakeState.totals.uptime_s = Math.floor(cumDt / 1000);
+    lastState = fakeState;
+
+    events.sort((a,b) => (a.at||0) - (b.at||0));
+    render();
+    setTimeout(tick, Math.min(step.dt || 300, 600));
+  }
+
+  setTimeout(tick, 300);
+}
 </script>
 </body>
 </html>
