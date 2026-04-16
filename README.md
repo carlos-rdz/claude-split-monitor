@@ -1,10 +1,16 @@
 # claude-split-monitor
 
+[![PyPI version](https://img.shields.io/pypi/v/claude-split-monitor.svg)](https://pypi.org/project/claude-split-monitor/)
+[![Python 3.8+](https://img.shields.io/pypi/pyversions/claude-split-monitor.svg)](https://pypi.org/project/claude-split-monitor/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 **Real-time dashboard for [claude-split](https://github.com/carlos-rdz/claude-split) sessions.**
 
 See what your Planner and Executor agents are doing, how much they're spending, and where your time goes.
 
 ![claude-split-monitor dashboard](docs/screenshot.png)
+
+> See it in action: [demo.gif](docs/demo.gif) *(record with `claude-split-monitor --no-browser` + any screen-to-gif tool)*
 
 ## Features
 
