@@ -1,0 +1,66 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "ClaudeSplit-arm64-apple-macosx15.0-release.exe": ["<ClaudeSplit-arm64-apple-macosx15.0-release.exe>"]
+  "ClaudeSplit-arm64-apple-macosx15.0-release.module": ["<ClaudeSplit-arm64-apple-macosx15.0-release.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<ClaudeSplit-arm64-apple-macosx15.0-release.exe>","<ClaudeSplit-arm64-apple-macosx15.0-release.module>"]
+  "test": ["<ClaudeSplit-arm64-apple-macosx15.0-release.exe>","<ClaudeSplit-arm64-apple-macosx15.0-release.module>"]
+default: "main"
+nodes:
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+commands:
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/ClaudeSplitApp.swift","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WatchClient.swift","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WebView.swift"]
+    outputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/sources"]
+    description: "Write auxiliary file /Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/sources"
+
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/ClaudeSplitApp.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WatchClient.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WebView.swift.o"]
+    outputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.product/Objects.LinkFileList"
+
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"]
+    outputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt"
+
+  "<ClaudeSplit-arm64-apple-macosx15.0-release.exe>":
+    tool: phony
+    inputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit"]
+    outputs: ["<ClaudeSplit-arm64-apple-macosx15.0-release.exe>"]
+
+  "<ClaudeSplit-arm64-apple-macosx15.0-release.module>":
+    tool: phony
+    inputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/ClaudeSplitApp.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WatchClient.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WebView.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/Modules/ClaudeSplit.swiftmodule"]
+    outputs: ["<ClaudeSplit-arm64-apple-macosx15.0-release.module>"]
+
+  "C.ClaudeSplit-arm64-apple-macosx15.0-release.exe":
+    tool: shell
+    inputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/ClaudeSplitApp.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WatchClient.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WebView.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.product/Objects.LinkFileList"]
+    outputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit"]
+    description: "Linking ./.build/arm64-apple-macosx/release/ClaudeSplit"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-L","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release","-o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit","-module-name","ClaudeSplit","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-dead_strip","-Xlinker","-alias","-Xlinker","_ClaudeSplit_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.product/Objects.LinkFileList","-target","arm64-apple-macosx13.0","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g"]
+
+  "C.ClaudeSplit-arm64-apple-macosx15.0-release.module":
+    tool: shell
+    inputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/ClaudeSplitApp.swift","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WatchClient.swift","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WebView.swift","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/swift-version--58304C5D6DBC2206.txt","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/sources"]
+    outputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/ClaudeSplitApp.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WatchClient.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/WebView.swift.o","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/Modules/ClaudeSplit.swiftmodule"]
+    description: "Compiling Swift Module 'ClaudeSplit' (3 sources)"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-module-name","ClaudeSplit","-emit-dependencies","-emit-module","-emit-module-path","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/Modules/ClaudeSplit.swiftmodule","-output-file-map","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/output-file-map.json","-whole-module-optimization","-num-threads","10","-c","@/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ClaudeSplit.build/sources","-I","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/Modules","-target","arm64-apple-macosx13.0","-O","-j10","-DSWIFT_PACKAGE","-module-cache-path","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/release/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","ClaudeSplit_main","-swift-version","5","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-g","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks","-Xcc","-fPIC","-Xcc","-g","-package-name","claudesplit"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Package.swift","/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

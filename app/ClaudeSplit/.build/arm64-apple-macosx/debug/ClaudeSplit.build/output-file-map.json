@@ -1,0 +1,23 @@
+{
+  "": {
+    "swift-dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/master.swiftdeps"
+  },
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/ClaudeSplitApp.swift": {
+    "dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/ClaudeSplitApp.d",
+    "object": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/ClaudeSplitApp.swift.o",
+    "swiftmodule": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/ClaudeSplitApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/ClaudeSplitApp.swiftdeps"
+  },
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WatchClient.swift": {
+    "dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WatchClient.d",
+    "object": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WatchClient.swift.o",
+    "swiftmodule": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WatchClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WatchClient.swiftdeps"
+  },
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WebView.swift": {
+    "dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WebView.d",
+    "object": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WebView.swift.o",
+    "swiftmodule": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WebView~partial.swiftmodule",
+    "swift-dependencies": "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/.build/arm64-apple-macosx/debug/ClaudeSplit.build/WebView.swiftdeps"
+  }
+}

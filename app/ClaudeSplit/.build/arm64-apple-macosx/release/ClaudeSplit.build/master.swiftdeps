@@ -1,0 +1,8 @@
+version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
+options: "32e7849986a8918dd31175be2fefcd752caf014270c56b249f3e0da120e0eee2"
+build_start_time: [1776313211, 205274000]
+build_end_time: [1776313215, 308208000]
+inputs:
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/ClaudeSplitApp.swift": [1776312930, 26407185]
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WatchClient.swift": [1776313040, 495441464]
+  "/Users/crodriguez/code/claude-split-monitor/app/ClaudeSplit/Sources/ClaudeSplit/WebView.swift": [1776313043, 573528264]
