@@ -30,9 +30,13 @@ class WatchClient: ObservableObject {
     private let maxDelay:         Double  = 15.0
     private var prevAlertTexts:   Set<String> = []
 
+    private var canNotify: Bool { Bundle.main.bundleIdentifier != nil }
+
     init() {
-        UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        if canNotify {
+            UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        }
         connect()
     }
 
@@ -123,6 +127,7 @@ class WatchClient: ObservableObject {
     // ── Notifications ────────────────────────────────────────────────────────
 
     private func notify(_ text: String) {
+        guard canNotify else { return }
         let content       = UNMutableNotificationContent()
         content.title     = "claude-split"
         content.body      = text
